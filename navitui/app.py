@@ -290,8 +290,9 @@ class NaviTuiApp(KitApp):
     #sidebar-panel { width: 26; }
     #tracks-panel { width: 1fr; }
     #pl-header { display: none; height: auto; padding: 0 1 1 1; }
-    #pl-art { height: 8; width: 8; min-height: 8; min-width: 8; border: none; background: transparent; align: center middle; }
-    #pl-art > .cover-image { max-width: 100%; max-height: 100%; }
+    #pl-art { height: 8; width: 8; border: none; background: transparent; align: center middle; content-align: center middle; }
+    #pl-art > .cover-image { width: auto; height: auto; max-width: 100%; max-height: 100%; }
+    #pl-art > #pl-placeholder { width: 100%; height: 100%; content-align: center middle; }
     #pl-info { height: auto; width: 1fr; padding: 0 1; content-align: left middle; }
     #side { width: 34; }
     #art-panel {
@@ -311,25 +312,16 @@ class NaviTuiApp(KitApp):
     .zen #sidebar-panel, .zen #split1, .zen #tracks-panel,
     .zen #split2, .zen #queue-panel, .zen #topbar,
     .zen #now, .zen Footer { display: none; }
-    .zen #side {
-        width: 1fr;
-        align: center middle;
-        content-align: center middle;
-        background: transparent;
-    }
     .zen #art-panel {
-        width: 48; height: 24;
         border: none;
         background: transparent;
         content-align: center middle;
     }
     .zen #zen-viz {
         display: block; height: 1; width: 100%;
-        content-align: center middle;
     }
     .zen #zen-progress {
         display: block; height: 1; width: 50%;
-        content-align: center middle;
     }
     .zen #zen-info {
         display: block; height: auto; width: 100%;
@@ -414,7 +406,8 @@ class NaviTuiApp(KitApp):
             yield Splitter("#sidebar-panel", on_resized=self._persist_width, id="split1")
             with Vertical(id="tracks-panel", classes="panel"):
                 with Horizontal(id="pl-header"):
-                    yield Static(id="pl-art")
+                    with Vertical(id="pl-art"):
+                        yield Static("♪", id="pl-placeholder")
                     yield Static(id="pl-info")
                 yield ClickList(id="tracks-list")
             yield Splitter("#side", invert=True, on_resized=self._persist_width, id="split2")
@@ -3018,20 +3011,21 @@ class NaviTuiApp(KitApp):
             self._show_pl_placeholder()
             return
         def swap():
-            el = self.query_one("#pl-art", Static)
+            el = self.query_one("#pl-art")
             try:
                 from textual_image.widget import Image
                 image = Image(str(path), classes="cover-image")
                 el.remove_children()
                 el.mount(image)
             except Exception:
-                el.update(Text(justify="center").append("♪", style=f"bold {palette.vfaint}"))
+                self._show_pl_placeholder()
         self.app.call_next(swap)
 
     def _show_pl_placeholder(self) -> None:
         def do():
-            el = self.query_one("#pl-art", Static)
-            el.update(Text(justify="center").append("♪", style=f"bold {palette.vfaint}"))
+            el = self.query_one("#pl-art")
+            el.remove_children()
+            el.mount(Static("♪", id="pl-placeholder"))
         self.app.call_next(do)
 
     def _tint_from_art(self, path: Path | None) -> None:
@@ -3134,10 +3128,29 @@ class NaviTuiApp(KitApp):
     def action_toggle_zen(self) -> None:
         self._zen = not self._zen
         self.set_class(self._zen, "zen")
+        side = self.query_one("#side")
+        art = self.query_one("#art-panel", CoverArt)
         if self._zen:
+            side.styles.width = "1fr"
+            side.styles.height = "1fr"
+            side.styles.align = ("center", "middle")
+            art.styles.width = 48
+            art.styles.height = 24
+            art.styles.min_width = 48
+            art.styles.min_height = 24
+            art.styles.max_width = 48
+            art.styles.max_height = 24
             self._render_zen_info()
         else:
-            # restore focus to a sensible list when the panels come back
+            side.styles.width = 34
+            side.styles.height = "1fr"
+            side.styles.align = ("start", "start")
+            art.styles.width = "auto"
+            art.styles.height = "40%"
+            art.styles.min_width = None
+            art.styles.min_height = 10
+            art.styles.max_width = None
+            art.styles.max_height = None
             self.query_one("#tracks-list", ClickList).focus()
 
     def _render_zen_info(self) -> None:
