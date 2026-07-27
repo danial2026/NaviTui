@@ -25,18 +25,6 @@ from navitui.models import SearchResults
 from navitui.widgets import Logo, Visualizer
 
 
-# Shared modal styling: transparent backgrounds, extra border-radius, clean look
-_MODAL_COMMON = """
-    background: transparent;
-    border: tall $kit-border-focus;
-    padding: 1 2;
-"""
-_MODAL_BOX_COMMON = """
-    background: transparent;
-    border: none;
-"""
-
-
 def settle_pop_in(screen, box_selector: str) -> None:
     """textual 8 sharp edge: `Widget.visual_style` caches the blended text
     background while an ancestor's opacity is still animating (the cache key

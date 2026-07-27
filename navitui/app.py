@@ -98,7 +98,7 @@ QUALITY_PRESETS = [
 ]
 
 
-# Keys and descriptions are kept short on purpose: ricekit's HelpModal is a
+# Keys and descriptions are kept short on purpose: NaviTuiHelpModal is a
 # fixed-width box that pads the key column to the widest key, so a long key or
 # description wraps and breaks the columns. Widest key here is "[count] j/k".
 HELP_SECTIONS = [
@@ -3133,7 +3133,7 @@ class NaviTuiApp(KitApp):
         self._flush_mutations()
 
     def action_help(self) -> None:
-        self.push_screen(HelpModal(HELP_SECTIONS, title="NaviTui · keys"))
+        self.push_screen(NaviTuiHelpModal(HELP_SECTIONS, title="NaviTui · keys"))
 
     def action_stats(self) -> None:
         """Open the local listening-stats modal — reads the play log on open
