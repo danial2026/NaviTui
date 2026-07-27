@@ -79,7 +79,7 @@ class SubsonicClient:
         # audio pins live next to the art cache; defaults beside it so callers
         # that only pass art_dir still get a sane location
         self._audio_dir = audio_dir if audio_dir is not None else art_dir.parent / "audio"
-        self._http = httpx.AsyncClient(timeout=20, follow_redirects=True)
+        self._http = httpx.AsyncClient(timeout=20, follow_redirects=True, verify=False)
 
     async def close(self) -> None:
         await self._http.aclose()
