@@ -50,10 +50,8 @@ from navitui.screens import (
     PlaylistPickerModal,
     SearchModal,
     ServerSwitcherModal,
-    SettingsModal,
     StatsModal,
 )
-from navitui import ai as aimod
 from navitui.stats import StatsStore
 from navitui import stats as statsmod
 from navitui.widgets import ClickList, Logo, NowPlaying, PAUSE_GLYPH, PLAY_GLYPH
@@ -188,7 +186,6 @@ HELP_SECTIONS = [
             ("ctrl+o", "audio device"),
             ("ctrl+g", "switch server"),
             ("ctrl+y", "private mode"),
-            ("ctrl+n", "settings"),
             ("ctrl+p", "command palette (search)"),
             ("?", "this help"),
             ("q", "quit"),
@@ -265,7 +262,6 @@ class NaviTuiApp(KitApp):
         _kb("audio_device", "switch_audio_device"),
         _kb("server_switch", "switch_server"),
         _kb("private_mode", "toggle_private_mode"),
-        _kb("settings", "settings"),
         # explicit so it's remappable via player.toml; Textual would otherwise
         # auto-bind ctrl+p. Naming the binding `command_palette` also stops the
         # auto-bind from doubling up.
@@ -447,14 +443,11 @@ class NaviTuiApp(KitApp):
 
         self.query_one("#art-panel", CoverArt).border_title = ""
         self.query_one("#queue-panel").border_title = ""
-        # Album Spotlight Home view — effective home_spotlight (state over config)
-        self._home_enabled = bool(self._setting("home_spotlight"))
         saved_view = state.get("view", "all-songs")
         if (
             saved_view in VIEW_LABELS
             or saved_view.startswith(("pl:", "podcast:"))
             or saved_view == "radio"
-            or (saved_view == "home" and self._home_enabled)
         ):
             self.view = saved_view
         elif saved_view == "home":
@@ -761,144 +754,6 @@ class NaviTuiApp(KitApp):
             timeout=3,
         )
 
-    # ── settings screen (Album Spotlight / AI) ────────────────────────
-    def action_settings(self) -> None:
-        current = {
-            k: self._setting(k)
-            for k in ("ai_provider", "anthropic_api_key", "gemini_api_key",
-                      "ai_model", "home_spotlight")
-        }
-        self.push_screen(SettingsModal(current), self._settings_saved)
-
-    def _settings_saved(self, result) -> None:
-        if not result:
-            return
-        self.dirs.save_state(result)
-        self._home_enabled = bool(result.get("home_spotlight", self._home_enabled))
-        self._render_sidebar()
-        self.notify("settings saved", timeout=2)
-        if self.view == "home":
-            self._load_view("home")  # pick up a newly-added key / provider
-
-    # ── Album Spotlight (Home view) ───────────────────────────────────
-    def _spotlight_configured(self) -> bool:
-        provider = str(self._setting("ai_provider") or "anthropic")
-        return aimod.is_configured(
-            provider,
-            str(self._setting("anthropic_api_key") or ""),
-            str(self._setting("gemini_api_key") or ""),
-        )
-
-    async def _render_home(self) -> None:
-        """Album of the Day + AI trivia. Renders as disabled info rows (not
-        playable track rows) so the track-index handlers stay untouched;
-        self._songs still holds the album so Enter on the Home row plays it."""
-        if self.client is None:
-            return
-        try:
-            albums = await self.client.get_album_list("newest", size=30)
-        except Exception:
-            albums = []
-        album = None
-        if albums:
-            # deterministic "of the day": same album all day, changes at midnight
-            album = random.Random(time.strftime("%Y-%m-%d")).choice(albums)
-        else:
-            cached = self.dirs.read_cache("home-mix") or {}
-            if cached.get("album"):
-                album = Album.from_dict(cached["album"])
-        if album is None:
-            self._show_spotlight(None, [], None, hint="add albums to your library")
-            return
-        try:
-            songs = await self.client.get_album_songs(album.id)
-        except Exception:
-            songs = []
-        if self.view != "home":
-            return
-        self.dirs.write_cache("home-mix", {"album": album.to_dict(), "spotlight_album_id": album.id})
-        cached = self.dirs.read_cache(f"spotlight-{album.id}")
-        meta = cached if isinstance(cached, dict) and cached.get("trivia") else None
-        will_fetch = meta is None and self._spotlight_configured()
-        self._show_spotlight(album, songs, meta, loading=will_fetch)
-        if will_fetch:
-            self._load_spotlight(album, songs)
-
-    @work(exclusive=True, group="spotlight")
-    async def _load_spotlight(self, album: Album, songs: list[Song]) -> None:
-        provider = str(self._setting("ai_provider") or "anthropic")
-        genre = getattr(songs[0], "genre", "") if songs else ""
-        loop = asyncio.get_running_loop()
-        data = await loop.run_in_executor(
-            None,
-            lambda: aimod.generate_album_spotlight(
-                provider=provider,
-                anthropic_api_key=str(self._setting("anthropic_api_key") or ""),
-                gemini_api_key=str(self._setting("gemini_api_key") or ""),
-                model=str(self._setting("ai_model") or ""),
-                album=album.name,
-                artist=album.artist,
-                year=str(album.year or ""),
-                genre=genre or "",
-            ),
-        )
-        if self.view != "home":
-            return
-        if not data:
-            self._show_spotlight(album, songs, None, failed=True)
-            return
-        self.dirs.write_cache(f"spotlight-{album.id}", data)
-        self._show_spotlight(album, songs, data)
-
-    def _show_spotlight(
-        self, album, songs, meta, *, loading: bool = False, failed: bool = False, hint: str = ""
-    ) -> None:
-        self._songs = list(songs)  # Enter on the Home row plays the album
-        if self._filtering:
-            self._exit_filter()
-        self._clear_selection()
-        panel = self.query_one("#tracks-panel")
-        panel.border_title = "★ album of the day"
-        opts: list[Option] = [Option(Text(""), disabled=True)]
-
-        def line(t: Text) -> None:
-            opts.append(Option(t, disabled=True))
-
-        if album is None:
-            line(Text(f"  {hint or 'nothing to spotlight yet'}", style=palette.dim))
-            self._fill("#tracks-list", opts, "#tracks-panel")
-            return
-
-        title = Text("  ", no_wrap=True, overflow="ellipsis")
-        title.append(album.name, style=f"bold {palette.text}")
-        line(title)
-        sub = Text("  ", no_wrap=True, overflow="ellipsis")
-        sub.append(album.artist or "unknown artist", style=palette.sub)
-        line(sub)
-        m = meta or {}
-        bits = [b for b in (m.get("year") or (str(album.year) if album.year else ""),
-                            m.get("label", ""), m.get("genre", "")) if b]
-        if bits:
-            line(Text("  " + "  ·  ".join(bits), style=palette.dim))
-        line(Text(""))
-        if loading:
-            line(Text(f"  {anim.spinner(0)} loading spotlight…", style=palette.blue))
-        elif m.get("trivia"):
-            for wrapped in textwrap.wrap(m["trivia"], width=56):
-                line(Text("  " + wrapped, style=palette.text))
-        elif failed:
-            line(Text("  couldn't load trivia — check your key in settings", style=palette.faint))
-        elif not self._spotlight_configured():
-            hint_t = Text("  add a Claude or Gemini key in settings (", style=palette.faint)
-            hint_t.append(CONFIG["keybinds"]["settings"], style=palette.blue)
-            hint_t.append(") for trivia", style=palette.faint)
-            line(hint_t)
-        line(Text(""))
-        play = Text("  enter", style=palette.blue)
-        play.append(" on Home plays this album", style=palette.dim)
-        line(play)
-        self._fill("#tracks-list", opts, "#tracks-panel")
-
     @staticmethod
     def _reorder_for_artist_diversity(songs: list[Song], last_artist: str) -> list[Song]:
         """Reorder so the same artist rarely plays back-to-back (greedy: always
@@ -1197,11 +1052,6 @@ class NaviTuiApp(KitApp):
         if ol.highlighted is not None:
             highlighted_id = ol.get_option_at_index(ol.highlighted).id
         options: list[Option] = []
-        if getattr(self, "_home_enabled", False):
-            home_row = Text(no_wrap=True, overflow="ellipsis")
-            home_row.append("★ ", style=palette.text)
-            home_row.append("home", style=palette.text)
-            options.append(Option(home_row, id="home"))
         for view_id, label in VIEWS:
             row = Text(no_wrap=True, overflow="ellipsis")
             if view_id == "starred":
@@ -1338,9 +1188,6 @@ class NaviTuiApp(KitApp):
     @work(exclusive=True, group="songs")
     async def _load_view(self, view_id: str) -> None:
         await asyncio.sleep(0.12)  # superseded while the cursor is moving
-        if view_id == "home":
-            await self._render_home()
-            return
         title = self._tracks_title(view_id)
 
         if view_id in ("all-songs", "shuffle-all"):

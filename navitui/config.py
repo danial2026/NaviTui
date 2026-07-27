@@ -72,7 +72,6 @@ KEYBINDS = {
     "server_switch":       "ctrl+g",
     "pin_toggle":          "ctrl+f",
     "private_mode":        "ctrl+y",
-    "settings":            "ctrl+n",
     "command_palette":     "ctrl+p",
     "help":                "question_mark",
     "quit":                "q",
@@ -89,7 +88,7 @@ DEFAULTS = {
     "discord_rich_presence": False,
     "discord_app_id": "",         # discord.com/developers/applications
     "listenbrainz_token": "",     # listenbrainz.org/profile — scrobble to ListenBrainz
-    "remote_control": True,       # local control API (unix socket) for the CLI/MCP
+    "remote_control": True,       # local control API (unix socket) for the CLI
     "remote_token": "",           # optional shared secret; required on the TCP fallback
     "jukebox": False,             # play on the SERVER's audio out, not this machine
     "replaygain_preamp": 0.0,     # dB, applied on top of ReplayGain gain
@@ -99,14 +98,6 @@ DEFAULTS = {
     # 10-band parametric equalizer (31Hz–16kHz). Toggled/edited live from the
     # in-app overlay; persisted at runtime in app state, seeded from here.
     "equalizer": {"enabled": False, "preset": "flat", "bands": [0.0] * 10},
-    # Album Spotlight (Home view): a daily album with AI-generated trivia.
-    # Provider + key are usually set from the in-app Settings screen (stored in
-    # app state), but can also be pinned here.
-    "ai_provider": "anthropic",   # "anthropic" (Claude) | "gemini"
-    "anthropic_api_key": "",      # console.anthropic.com — for the Claude provider
-    "gemini_api_key": "",         # aistudio.google.com — for the Gemini provider
-    "ai_model": "",               # override the provider's default model ("" = default)
-    "home_spotlight": True,       # show the Home view with an Album of the Day
 }
 
 _TEMPLATE = """\
@@ -186,15 +177,6 @@ _TEMPLATE = """\
 #enabled = false
 #preset = "flat"
 #bands = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-
-# Album Spotlight (Home view) — an Album of the Day with AI-generated trivia.
-# Set the provider and paste a key from the in-app Settings screen, or here.
-# home_spotlight = false hides the Home view entirely.
-#ai_provider = "anthropic"   # "anthropic" (Claude) or "gemini"
-#anthropic_api_key = ""
-#gemini_api_key = ""
-#ai_model = ""                # e.g. "claude-haiku-4-5" or "gemini-2.5-flash"
-#home_spotlight = true
 
 # Remap any key. Action ids and defaults:
 #[keybinds]

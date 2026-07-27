@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "navitui"
-version = "0.4.0"
+version = "0.6.0"
 description = "A fast, animated TUI player for Navidrome — cover art in the terminal, playback via mpv, themes via ricekit"
 readme = "README.md"
 license = { text = "GPL-3.0-or-later" }
@@ -42,10 +42,6 @@ windows = [
     "winrt-Windows.Storage>=3.0",
     "winrt-Windows.Storage.Streams>=3.0",
 ]
-# MCP server — control a running NaviTui from Claude Code / any MCP client
-mcp = ["mcp>=1.2"]
-# Album Spotlight (Home view) — AI-generated album trivia via Claude or Gemini
-ai = ["anthropic>=0.40", "google-genai>=1.0"]
 
 [project.urls]
 Homepage = "https://github.com/Gheat1/NaviTui"
@@ -54,7 +50,6 @@ Issues = "https://github.com/Gheat1/NaviTui/issues"
 
 [project.scripts]
 navitui = "navitui:main"
-navitui-mcp = "navitui.mcp:main"
 navitui-remote = "navitui.cli:main"
 
 [tool.setuptools]

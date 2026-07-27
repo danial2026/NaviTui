@@ -2,8 +2,6 @@
 
 # ♪ NaviTui
 
-**A fast, animated terminal player for [Navidrome](https://www.navidrome.org/) and any Subsonic server.**
-
 A fork of [Gheat1/NaviTui](https://github.com/Gheat1/NaviTui) — I added stuff I liked and changed the UI a bit.
 
 <img src="assets/shot-main.png" alt="NaviTui" width="100%">
@@ -16,6 +14,7 @@ A fork of [Gheat1/NaviTui](https://github.com/Gheat1/NaviTui) — I added stuff 
 ## Install
 
 ```sh
+cd ~/codes
 git clone https://github.com/danial2026/NaviTui.git
 cd NaviTui
 source .venv/bin/activate
@@ -48,5 +47,4 @@ Press `?` for the full cheatsheet.
 ## Links
 
 - [ricekit](https://github.com/Gheat1/ricekit) — the design system
-- Issues & PRs welcome
 - GPL-3.0-or-later

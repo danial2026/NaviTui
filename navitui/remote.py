@@ -1,5 +1,4 @@
-"""Remote-control API — the local wire the CLI (#27) and MCP server (#26)
-both sit on.
+"""Remote-control API — the local wire the CLI (#27) sits on.
 
 An asyncio server that lives on the app's own event loop (like `mpris`): a
 client connects, sends newline-delimited JSON commands, and gets one JSON
