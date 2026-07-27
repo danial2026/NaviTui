@@ -290,7 +290,7 @@ class NaviTuiApp(KitApp):
     #sidebar-panel { width: 26; }
     #tracks-panel { width: 1fr; }
     #pl-header { display: none; height: auto; padding: 0 1 1 1; }
-    #pl-art { height: 4; width: 4; border: none; background: transparent; align: center middle; }
+    #pl-art { height: 8; width: 8; min-height: 8; min-width: 8; border: none; background: transparent; align: center middle; }
     #pl-art > .cover-image { max-width: 100%; max-height: 100%; }
     #pl-info { height: auto; width: 1fr; padding: 0 1; content-align: left middle; }
     #side { width: 34; }
@@ -435,10 +435,8 @@ class NaviTuiApp(KitApp):
             except Exception:
                 pass
 
-        self.query_one("#sidebar-panel").border_title = "tracks"
-        self.query_one("#tracks-panel").border_title = "tracks"
-        self.query_one("#art-panel", CoverArt).border_title = "cover"
-        self.query_one("#queue-panel").border_title = "queue"
+        self.query_one("#art-panel", CoverArt).border_title = ""
+        self.query_one("#queue-panel").border_title = ""
         # Album Spotlight Home view — effective home_spotlight (state over config)
         self._home_enabled = bool(self._setting("home_spotlight"))
         saved_view = state.get("view", "all-songs")
