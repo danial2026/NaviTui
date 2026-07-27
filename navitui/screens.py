@@ -48,7 +48,7 @@ class OnboardingScreen(Screen):
     OnboardingScreen { align: center middle; }
     OnboardingScreen #onboard-box {
         width: 58; height: auto;
-        border: solid $kit-border-focus;
+        border: round $kit-border-focus;
         background: $kit-modal-bg;
         padding: 1 3;
     }
@@ -174,7 +174,7 @@ class InputModal(ModalScreen):
     InputModal { align: center middle; background: $kit-overlay; }
     InputModal #input-box {
         width: 52; height: auto;
-        background: $kit-modal-bg; border: solid $kit-border-focus; padding: 1 2;
+        background: $kit-modal-bg; border: round $kit-border-focus; padding: 1 2;
     }
     InputModal Static { background: $kit-modal-bg; }
     InputModal Input { background: transparent; border: none; border-bottom: solid $kit-border; }
@@ -234,7 +234,7 @@ class LyricsModal(ModalScreen):
     LyricsModal { align: center middle; background: $kit-overlay; }
     LyricsModal #lyrics-box {
         width: 64; height: 80%;
-        background: $kit-modal-bg; border: solid $kit-border-focus; padding: 1 2;
+        background: $kit-modal-bg; border: round $kit-border-focus; padding: 1 2;
     }
     LyricsModal Static { background: $kit-modal-bg; }
     LyricsModal #lyrics-head { height: 1; }
@@ -357,7 +357,7 @@ class StatsModal(ModalScreen):
     StatsModal { align: center middle; background: $kit-overlay; }
     StatsModal #stats-box {
         width: 56; height: auto; max-height: 80%;
-        background: $kit-modal-bg; border: solid $kit-border-focus; padding: 1 2;
+        background: $kit-modal-bg; border: round $kit-border-focus; padding: 1 2;
     }
     StatsModal Static { background: $kit-modal-bg; }
     StatsModal #stats-head { height: 1; margin-bottom: 1; }
@@ -470,7 +470,7 @@ class SearchModal(ModalScreen):
     SearchModal { align: center middle; background: $kit-overlay; }
     SearchModal #search-box {
         width: 68; height: auto; max-height: 80%;
-        background: $kit-modal-bg; border: solid $kit-border-focus; padding: 1 2;
+        background: $kit-modal-bg; border: round $kit-border-focus; padding: 1 2;
     }
     SearchModal Input { background: transparent; border: none; border-bottom: solid $kit-border; }
     SearchModal Input:focus { border-bottom: solid $kit-border-focus; }
@@ -644,7 +644,7 @@ class EqualizerModal(ModalScreen):
     EqualizerModal { align: center middle; background: $kit-overlay; }
     EqualizerModal #eq-box {
         width: 60; height: auto;
-        background: $kit-modal-bg; border: solid $kit-border-focus; padding: 1 2;
+        background: $kit-modal-bg; border: round $kit-border-focus; padding: 1 2;
     }
     EqualizerModal Static { background: $kit-modal-bg; }
     EqualizerModal #eq-head { height: 1; margin-bottom: 1; }
@@ -787,7 +787,7 @@ class AudioDeviceSwitcherModal(ModalScreen):
     AudioDeviceSwitcherModal { align: center middle; background: $kit-overlay; }
     AudioDeviceSwitcherModal #dev-box {
         width: 60; height: auto; max-height: 80%;
-        background: $kit-modal-bg; border: solid $kit-border-focus; padding: 1 2;
+        background: $kit-modal-bg; border: round $kit-border-focus; padding: 1 2;
     }
     AudioDeviceSwitcherModal Static { background: $kit-modal-bg; }
     AudioDeviceSwitcherModal #dev-list { height: auto; max-height: 20; }
@@ -847,7 +847,7 @@ class AddServerModal(ModalScreen):
     AddServerModal { align: center middle; background: $kit-overlay; }
     AddServerModal #add-box {
         width: 58; height: auto;
-        background: $kit-modal-bg; border: solid $kit-border-focus; padding: 1 3;
+        background: $kit-modal-bg; border: round $kit-border-focus; padding: 1 3;
     }
     AddServerModal #add-head { height: 1; margin-bottom: 1; }
     AddServerModal Input {
@@ -932,7 +932,7 @@ class ServerSwitcherModal(ModalScreen):
     ServerSwitcherModal { align: center middle; background: $kit-overlay; }
     ServerSwitcherModal #srv-box {
         width: 54; height: auto; max-height: 80%;
-        background: $kit-modal-bg; border: solid $kit-border-focus; padding: 1 2;
+        background: $kit-modal-bg; border: round $kit-border-focus; padding: 1 2;
     }
     ServerSwitcherModal Static { background: $kit-modal-bg; }
     ServerSwitcherModal #srv-list { height: auto; max-height: 18; }
@@ -1069,7 +1069,7 @@ class PlaylistPickerModal(ModalScreen):
     PlaylistPickerModal { align: center middle; background: $kit-overlay; }
     PlaylistPickerModal #plp-box {
         width: 56; height: auto; max-height: 80%;
-        background: $kit-modal-bg; border: solid $kit-border-focus; padding: 1 2;
+        background: $kit-modal-bg; border: round $kit-border-focus; padding: 1 2;
     }
     PlaylistPickerModal Static { background: $kit-modal-bg; }
     PlaylistPickerModal #plp-list { height: auto; max-height: 20; }
@@ -1174,11 +1174,11 @@ class SettingsModal(ModalScreen):
     SettingsModal { align: center middle; background: $kit-overlay; }
     SettingsModal #set-box {
         width: 64; height: auto;
-        background: $kit-modal-bg; border: solid $kit-border-focus; padding: 1 2;
+        background: $kit-modal-bg; border: round $kit-border-focus; padding: 1 2;
     }
     SettingsModal Static { background: $kit-modal-bg; }
-    SettingsModal Input { background: transparent; border: solid $kit-border; margin-bottom: 0; }
-    SettingsModal Input:focus { border: solid $kit-border-focus; }
+    SettingsModal Input { background: transparent; border: round $kit-border; margin-bottom: 0; }
+    SettingsModal Input:focus { border: round $kit-border-focus; }
     SettingsModal .set-label { height: 1; }
     """
 

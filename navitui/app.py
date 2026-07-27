@@ -282,21 +282,25 @@ class NaviTuiApp(KitApp):
     #main { height: 1fr; }
     NavList { text-wrap: nowrap; text-overflow: ellipsis; }
     .panel {
-        border: solid $kit-border;
-        padding: 0 0 0 0;
+        border: round $kit-border;
+        padding: 0 1;
     }
-    .panel:focus-within { border: solid $kit-border-focus; }
+    .panel:focus-within { border: round $kit-border-focus; }
     .panel NavList { height: 1fr; }
     #sidebar-panel { width: 26; }
     #tracks-panel { width: 1fr; }
     #pl-header { display: none; height: auto; padding: 0 1 1 1; }
+    #pl-art { height: 5; width: 5; border: none; background: transparent; align: center middle; }
+    #pl-art > .cover-image { width: auto; height: auto; }
+    #pl-art > #cover-placeholder { width: 100%; height: 100%; content-align: center middle; }
+    #pl-info { height: auto; width: 1fr; padding: 0 1; }
     #side { width: 34; }
     #art-panel {
         height: 40%; min-height: 10;
         border: none;
         background: transparent;
     }
-    #queue-panel { height: 1fr; border: solid $kit-border; }
+    #queue-panel { height: 1fr; border: round $kit-border; }
 
     NowPlaying.playing { }
 
@@ -314,18 +318,20 @@ class NaviTuiApp(KitApp):
     }
     .zen #art-panel {
         width: 44%; height: 45%; max-width: 64;
-        border: none;
+        border: none; content-align: center middle;
     }
     .zen #zen-viz {
         display: block; height: 1; margin: 0 4 0 4;
+        content-align: center middle;
     }
     .zen #zen-progress {
         display: block; height: 1; width: 70%;
-        margin: 1 0 0 0;
+        margin: 1 0 0 0; content-align: center middle;
     }
     .zen #zen-info {
         display: block; height: auto;
         background: transparent; margin: 0 2 0 2;
+        content-align: center middle;
     }
     """
 
@@ -404,7 +410,9 @@ class NaviTuiApp(KitApp):
                 yield ClickList(id="sidebar-list")
             yield Splitter("#sidebar-panel", on_resized=self._persist_width, id="split1")
             with Vertical(id="tracks-panel", classes="panel"):
-                yield Static(id="pl-header")
+                with Horizontal(id="pl-header"):
+                    yield Static(id="pl-art")
+                    yield Static(id="pl-info")
                 yield ClickList(id="tracks-list")
             yield Splitter("#side", invert=True, on_resized=self._persist_width, id="split2")
             with Vertical(id="side"):
@@ -1291,9 +1299,9 @@ class NaviTuiApp(KitApp):
             self._exit_filter()
         self._clear_selection()
         panel = self.query_one("#tracks-panel")
-        panel.border_title = title
-        header = self.query_one("#pl-header", Static)
+        header = self.query_one("#pl-header")
         if self.view.startswith("pl:"):
+            panel.border_title = ""
             pid = self.view.split(":", 1)[1]
             pl = next((p for p in self._playlists if p.id == pid), None)
             if pl:
@@ -1304,11 +1312,13 @@ class NaviTuiApp(KitApp):
                     t.append(f" · {anim.fmt_time(pl.duration)}", style=palette.dim)
                 if pl.owner:
                     t.append(f" · {pl.owner}", style=palette.vfaint)
-                header.update(t)
+                self.query_one("#pl-info", Static).update(t)
+                self._load_pl_art(pl.id)
                 header.display = True
             else:
                 header.display = False
         else:
+            panel.border_title = title
             header.display = False
         self._fill("#tracks-list", [self._song_row(s, i) for i, s in enumerate(songs)], "#tracks-panel")
 
@@ -2998,6 +3008,21 @@ class NaviTuiApp(KitApp):
             return
         panel.show(path, key)
         self._tint_from_art(path)
+
+    async def _load_pl_art(self, pl_id: str) -> None:
+        el = self.query_one("#pl-art", Static)
+        try:
+            path = await self.client.cover_art(pl_id)
+        except Exception:
+            el.update(Text(justify="center").append("♪", style=f"bold {palette.vfaint}"))
+            return
+        try:
+            from textual_image.widget import Image
+            image = Image(str(path), classes="cover-image")
+            await el.remove_children()
+            await el.mount(image)
+        except Exception:
+            el.update(Text(justify="center").append("♪", style=f"bold {palette.vfaint}"))
 
     def _tint_from_art(self, path: Path | None) -> None:
         """Live-tint the chrome with the cover's dominant color (or clear
