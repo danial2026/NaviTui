@@ -321,7 +321,8 @@ class NaviTuiApp(KitApp):
         background: transparent;
     }
     .zen #art-panel {
-        width: auto; height: auto;
+        width: 48; height: 24;
+        min-width: 48; min-height: 24;
         border: none;
         background: transparent;
         content-align: center middle;
@@ -1206,8 +1207,14 @@ class NaviTuiApp(KitApp):
                 row.append(f" {icons.STAR}", style=palette.text)
             elif view_id == "shuffle-all":
                 row.append(" \uf074", style=palette.text)  # nf-fa-random
+            elif view_id == "newest":
+                row.append(f" {icons.CLOCK}", style=palette.text)
+            elif view_id == "recent":
+                row.append(f" {icons.CALENDAR}", style=palette.text)
+            elif view_id == "frequent":
+                row.append(f" {icons.REFRESH}", style=palette.text)
             else:
-                row.append("  ", style=palette.vfaint)
+                row.append(f" {icons.LIST}", style=palette.text)
             row.append(f" {label}", style=palette.text)
             options.append(Option(row, id=view_id))
         for p in self._playlists:
@@ -3141,6 +3148,9 @@ class NaviTuiApp(KitApp):
         self.set_class(self._zen, "zen")
         if self._zen:
             self._render_zen_info()
+            song = self.queue.current
+            if song and song.cover_art:
+                self._load_art(song.cover_art, f"zen-{song.id}")
         else:
             self.query_one("#tracks-list", ClickList).focus()
 
