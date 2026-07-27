@@ -146,7 +146,7 @@ _TEMPLATE = """\
 #listenbrainz_token = ""
 
 # Local remote-control API — a unix socket under $XDG_RUNTIME_DIR/navitui that
-# the navitui CLI and MCP server talk to. Localhost/socket only; never exposed
+# the navitui CLI talks to. Localhost/socket only; never exposed
 # off this machine. Set a token to require it (mandatory on the TCP fallback).
 #remote_control = true
 #remote_token = ""
