@@ -193,19 +193,19 @@ class NowPlaying(Static):
         if self.sleep_label:
             right.append(f"{SLEEP_ICON}{self.sleep_label} ", style=palette.lav)
         vol_frac = 0.0 if self.muted else self.volume / 100
-        right.append("vol ", style=palette.vfaint)
+        right.append("vol ", style=palette.faint)
         gauge = anim.mini_gauge(vol_frac, 4)
         if self._vol_flash > 0 and anim.can_blend():
             gauge.stylize(anim.blend(palette.lav, "#ffffff", self._vol_flash / 14))
         right.append_text(gauge)
-        right.append(f" {self.volume:>2d}", style=palette.red if self.muted else palette.dim)
+        right.append(f" {self.volume:>2d}", style=palette.red if self.muted else palette.faint)
 
         bar_width = max(4, width - len(times) - right.cell_len)
         frac = self.position / self.duration if self.duration > 0 else 0.0
         pulse = (math.sin(self._tick * 0.55) + 1) / 2 if self.playing else 0.0
         line = Text()
         line.append_text(anim.smooth_bar(frac, bar_width, head_pulse=pulse))
-        line.append(times, style=palette.vfaint)
+        line.append(times, style=palette.dim)
         base = line.cell_len
         line.append_text(right)
 

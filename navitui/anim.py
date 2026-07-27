@@ -91,7 +91,7 @@ def smooth_bar(fraction: float, width: int, head_pulse: float = 0.0) -> Text:
         bar.append(_EIGHTHS[rem - 1], style=head_color)
     used = full + (1 if rem else 0)
     if used < width:
-        bar.append("╌" * (width - used), style=palette.vfaint)
+        bar.append("╌" * (width - used), style=palette.faint)
     return bar
 
 
@@ -101,7 +101,7 @@ def mini_gauge(fraction: float, width: int = 6) -> Text:
     lit = round(fraction * width)
     t = Text()
     t.append("▮" * lit, style=palette.lav)
-    t.append("▯" * (width - lit), style=palette.vfaint)
+    t.append("▯" * (width - lit), style=palette.faint)
     return t
 
 

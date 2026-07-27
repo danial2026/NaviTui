@@ -3097,9 +3097,9 @@ class NaviTuiApp(KitApp):
         dur = song.duration or 1.0
         frac = pos / dur if dur > 0 else 0.0
         p = Text(justify="center")
-        p.append(f"{anim.fmt_time(pos)} ", style=palette.vfaint)
+        p.append(f"{anim.fmt_time(pos)} ", style=palette.dim)
         p.append_text(anim.smooth_bar(frac, 20, head_pulse=0.3 if self.player and not self.player.paused else 0.0))
-        p.append(f" {anim.fmt_time(dur)}", style=palette.vfaint)
+        p.append(f" {anim.fmt_time(dur)}", style=palette.dim)
         prog.update(p)
 
         # visualizer in zen
