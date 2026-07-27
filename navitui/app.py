@@ -289,6 +289,7 @@ class NaviTuiApp(KitApp):
     .panel NavList { height: 1fr; }
     #sidebar-panel { width: 26; }
     #tracks-panel { width: 1fr; }
+    #pl-header { display: none; height: auto; padding: 0 1 1 1; }
     #side { width: 34; }
     #art-panel {
         height: 40%; min-height: 10;
@@ -404,6 +405,7 @@ class NaviTuiApp(KitApp):
                 yield ClickList(id="sidebar-list")
             yield Splitter("#sidebar-panel", on_resized=self._persist_width, id="split1")
             with Vertical(id="tracks-panel", classes="panel"):
+                yield Static(id="pl-header")
                 yield ClickList(id="tracks-list")
             yield Splitter("#side", invert=True, on_resized=self._persist_width, id="split2")
             with Vertical(id="side"):
@@ -1286,13 +1288,29 @@ class NaviTuiApp(KitApp):
 
     def _show_songs(self, songs: list[Song], title: str) -> None:
         self._songs = songs
-        # a fresh view supersedes any active filter / selection (the rows
-        # changed under both)
         if self._filtering:
             self._exit_filter()
         self._clear_selection()
         panel = self.query_one("#tracks-panel")
         panel.border_title = title
+        header = self.query_one("#pl-header", Static)
+        if self.view.startswith("pl:"):
+            pid = self.view.split(":", 1)[1]
+            pl = next((p for p in self._playlists if p.id == pid), None)
+            if pl:
+                t = Text()
+                t.append(f" {pl.name}", style=f"bold {palette.text}")
+                t.append(f"  {pl.song_count} songs", style=palette.dim)
+                if pl.duration:
+                    t.append(f" · {anim.fmt_time(pl.duration)}", style=palette.dim)
+                if pl.owner:
+                    t.append(f" · {pl.owner}", style=palette.vfaint)
+                header.update(t)
+                header.styles.display = "block"
+            else:
+                header.display = False
+        else:
+            header.display = False
         self._fill("#tracks-list", [self._song_row(s, i) for i, s in enumerate(songs)], "#tracks-panel")
 
     @work(exclusive=True, group="songs")
@@ -1426,16 +1444,16 @@ class NaviTuiApp(KitApp):
         is_current = current is not None and s.id == current.id
         row = Text(no_wrap=True, overflow="ellipsis")
         if s.id in self._selected:
-            row.append(f" {icons.CHECK_CIRCLE}", style=palette.green)
+            row.append(f" {icons.CHECK_CIRCLE}", style=palette.blue)
         elif is_current:
-            row.append(f" {PLAY_GLYPH}", style=palette.green)
+            row.append(f" {PLAY_GLYPH}", style=palette.blue)
         else:
             row.append("  ", style=palette.vfaint)
         row.append(f" {s.title}", style=f"bold {palette.blue}" if is_current else palette.text)
         if self.client is not None and self.client.cached_stream(s.id):
-            row.append(f" {icons.CHECK}", style=palette.green)
+            row.append(f" {icons.CHECK}", style=palette.blue)
         if s.starred:
-            row.append(f" {icons.STAR}", style=palette.yellow)
+            row.append(f" {icons.STAR}", style=palette.peach)
         if s.user_rating:
             row.append(f" {chr(0x2460 + s.user_rating - 1)}", style=palette.peach)
         row.append(f"  {s.artist}", style=palette.dim)

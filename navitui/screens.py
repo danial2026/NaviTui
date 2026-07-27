@@ -837,6 +837,85 @@ class AudioDeviceSwitcherModal(ModalScreen):
         self.dismiss(None)
 
 
+class AddServerModal(ModalScreen):
+    """Add a new server profile. Dismisses with {name, server, username, token,
+    salt} on success, or None on escape."""
+
+    BINDINGS = [Binding("escape", "cancel", show=False)]
+
+    DEFAULT_CSS = """
+    AddServerModal { align: center middle; background: $kit-overlay; }
+    AddServerModal #add-box {
+        width: 58; height: auto;
+        background: $kit-modal-bg; border: solid $kit-border-focus; padding: 1 3;
+    }
+    AddServerModal #add-head { height: 1; margin-bottom: 1; }
+    AddServerModal Input {
+        background: transparent;
+        border: none;
+        border-bottom: solid $kit-border;
+        margin-bottom: 0;
+    }
+    AddServerModal Input:focus { border-bottom: solid $kit-border-focus; }
+    AddServerModal #add-status { height: 1; padding: 0 1; }
+    """
+
+    def __init__(self, existing: list[str]) -> None:
+        super().__init__()
+        self._existing = existing
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="add-box"):
+            with Horizontal(id="add-head"):
+                yield Static(
+                    Text(f" {icons.PLUS} add server", style=f"bold {palette.sub}"),
+                )
+            yield Input(placeholder="name · e.g. home, office", id="in-name")
+            yield Input(placeholder="server · https://music.example.com", id="in-server")
+            yield Input(placeholder="username", id="in-user")
+            yield Input(placeholder="password", password=True, id="in-pass")
+            yield Static(self._hint(), id="add-status")
+
+    def _hint(self) -> Text:
+        t = Text()
+        t.append("enter", style=palette.blue)
+        t.append(" save  ·  ", style=palette.vfaint)
+        t.append("escape", style=palette.blue)
+        t.append(" cancel", style=palette.vfaint)
+        return t
+
+    def on_mount(self) -> None:
+        pop_in(self.query_one("#add-box"))
+        settle_pop_in(self, "#add-box")
+        self.query_one("#in-name", Input).focus()
+
+    @on(Input.Submitted)
+    def _submitted(self, event: Input.Submitted) -> None:
+        order = ["in-name", "in-server", "in-user", "in-pass"]
+        values = {i: self.query_one(f"#{i}", Input).value.strip() for i in order}
+        for field in order:
+            if not values[field]:
+                self.query_one(f"#{field}", Input).focus()
+                return
+        name = values["in-name"]
+        if name in self._existing:
+            status = self.query_one("#add-status", Static)
+            status.update(Text(f"{icons.CROSS_CIRCLE} profile '{name}' already exists", style=palette.red))
+            return
+        server = normalize_server(values["in-server"])
+        token, salt = make_token(values["in-pass"])
+        self.dismiss({
+            "name": name,
+            "server": server,
+            "username": values["in-user"],
+            "token": token,
+            "salt": salt,
+        })
+
+    def action_cancel(self) -> None:
+        self.dismiss(None)
+
+
 class ServerSwitcherModal(ModalScreen):
     """Pick, add, or remove Navidrome profiles. Dismisses with the selected
     profile name, or None on escape. `profiles` is `{name: {creds}}`;
@@ -921,56 +1000,16 @@ class ServerSwitcherModal(ModalScreen):
 
     # ── add server ────────────────────────────────────────────────────
     def action_add_server(self) -> None:
-        self.app.push_screen(
-            InputModal("profile name", "label (e.g. home, office)"),
-            self._add_name,
-        )
+        self.app.push_screen(AddServerModal(list(self._profiles)), self._add_done)
 
-    def _add_name(self, name: str | None) -> None:
-        if not name:
+    def _add_done(self, creds: dict | None) -> None:
+        if not creds:
             return
-        name = name.strip()
-        if name in self._profiles:
-            self.app.notify(f"profile '{name}' already exists", severity="warning", timeout=3)
-            return
-        self._new_name = name
-        self.app.push_screen(
-            InputModal("server URL", "https://music.example.com"),
-            self._add_server,
-        )
-
-    def _add_server(self, url: str | None) -> None:
-        if not url:
-            return
-        self._new_server = url.strip()
-        self.app.push_screen(
-            InputModal("username", "navidrome username"),
-            self._add_user,
-        )
-
-    def _add_user(self, user: str | None) -> None:
-        if not user:
-            return
-        self._new_user = user.strip()
-        self.app.push_screen(
-            InputModal("password", "navidrome password", password=True),
-            self._add_pass,
-        )
-
-    def _add_pass(self, pw: str | None) -> None:
-        if not pw:
-            return
-        server = normalize_server(self._new_server)
-        token, salt = make_token(pw)
-        self._profiles[self._new_name] = {
-            "server": server,
-            "username": self._new_user,
-            "token": token,
-            "salt": salt,
-        }
+        name = creds.pop("name")
+        self._profiles[name] = creds
         self._save_config()
         self._rebuild_list()
-        self.app.notify(f"added server '{self._new_name}'", timeout=3)
+        self.app.notify(f"added server '{name}'", timeout=3)
 
     # ── delete server ─────────────────────────────────────────────────
     def action_delete_server(self) -> None:
