@@ -1282,7 +1282,7 @@ class NaviTuiApp(KitApp):
             return f"podcast · {channel.title}" if channel else "podcast"
         if view_id == "radio":
             return "internet radio"
-        return VIEW_LABELS.get(view_id, "tracks")
+        return VIEW_LABELS.get(view_id, "")
 
     def _view_rows(self, view_id: str) -> list[Song]:
         """The playable rows for a podcast channel / the radio view, straight
@@ -1452,18 +1452,18 @@ class NaviTuiApp(KitApp):
         is_current = current is not None and s.id == current.id
         row = Text(no_wrap=True, overflow="ellipsis")
         if s.id in self._selected:
-            row.append(f" {icons.CHECK_CIRCLE}", style=palette.blue)
+            row.append(f" {icons.CHECK_CIRCLE}", style=palette.text)
         elif is_current:
-            row.append(f" {PLAY_GLYPH}", style=palette.blue)
+            row.append(f" {PLAY_GLYPH}", style=palette.text)
         else:
             row.append("  ", style=palette.vfaint)
-        row.append(f" {s.title}", style=f"bold {palette.blue}" if is_current else palette.text)
+        row.append(f" {s.title}", style=f"bold {palette.text}" if is_current else palette.text)
         if self.client is not None and self.client.cached_stream(s.id):
-            row.append(f" {icons.CHECK}", style=palette.blue)
+            row.append(f" {icons.CHECK}", style=palette.text)
         if s.starred:
-            row.append(f" {icons.STAR}", style=palette.peach)
+            row.append(f" {icons.STAR}", style=palette.text)
         if s.user_rating:
-            row.append(f" {chr(0x2460 + s.user_rating - 1)}", style=palette.peach)
+            row.append(f" {chr(0x2460 + s.user_rating - 1)}", style=palette.text)
         row.append(f"  {s.artist}", style=palette.dim)
         row.append(f" · {anim.fmt_time(s.duration)}", style=palette.vfaint)
         return Option(row, id=f"trk-{index}")
@@ -3008,20 +3008,29 @@ class NaviTuiApp(KitApp):
         panel.show(path, key)
         self._tint_from_art(path)
 
+    @work(exclusive=True, group="art")
     async def _load_pl_art(self, pl_id: str) -> None:
-        el = self.query_one("#pl-art", Static)
         try:
             path = await self.client.cover_art(pl_id)
         except Exception:
-            el.update(Text(justify="center").append("♪", style=f"bold {palette.vfaint}"))
+            self._show_pl_placeholder()
             return
-        try:
-            from textual_image.widget import Image
-            image = Image(str(path), classes="cover-image")
-            await el.remove_children()
-            await el.mount(image)
-        except Exception:
+        def swap():
+            el = self.query_one("#pl-art", Static)
+            try:
+                from textual_image.widget import Image
+                image = Image(str(path), classes="cover-image")
+                el.remove_children()
+                el.mount(image)
+            except Exception:
+                el.update(Text(justify="center").append("♪", style=f"bold {palette.vfaint}"))
+        self.app.call_next(swap)
+
+    def _show_pl_placeholder(self) -> None:
+        def do():
+            el = self.query_one("#pl-art", Static)
             el.update(Text(justify="center").append("♪", style=f"bold {palette.vfaint}"))
+        self.app.call_next(do)
 
     def _tint_from_art(self, path: Path | None) -> None:
         """Live-tint the chrome with the cover's dominant color (or clear
