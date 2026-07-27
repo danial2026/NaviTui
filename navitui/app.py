@@ -1306,7 +1306,7 @@ class NaviTuiApp(KitApp):
                 if pl.owner:
                     t.append(f" · {pl.owner}", style=palette.vfaint)
                 header.update(t)
-                header.styles.display = "block"
+                header.display = True
             else:
                 header.display = False
         else:
