@@ -333,7 +333,7 @@ class NaviTuiApp(KitApp):
         content-align: center middle;
     }
     .zen #zen-progress {
-        display: block; height: 1; width: 50%;
+        display: block; height: 1; width: 100%;
         content-align: center middle;
     }
     .zen #zen-info {

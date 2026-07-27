@@ -16,7 +16,8 @@ A fork of [Gheat1/NaviTui](https://github.com/Gheat1/NaviTui) — I added stuff 
 ## Install
 
 ```sh
-cd ~/codes/NaviTui
+git clone https://github.com/danial2026/NaviTui.git
+cd NaviTui
 source .venv/bin/activate
 navitui
 ```
