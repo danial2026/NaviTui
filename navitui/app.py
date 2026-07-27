@@ -312,7 +312,7 @@ class NaviTuiApp(KitApp):
     .zen #sidebar-panel, .zen #split1, .zen #tracks-panel,
     .zen #split2, .zen #queue-panel, .zen #topbar,
     .zen #now, .zen Footer { display: none; }
-    .zen #main { justify-content: center; }
+    .zen #main { align: center middle; }
     .zen #side {
         width: 1fr;
         height: 1fr;
@@ -1197,39 +1197,39 @@ class NaviTuiApp(KitApp):
         options: list[Option] = []
         if getattr(self, "_home_enabled", False):
             home_row = Text(no_wrap=True, overflow="ellipsis")
-            home_row.append("★ ", style=palette.yellow)
+            home_row.append("★ ", style=palette.text)
             home_row.append("home", style=palette.text)
             options.append(Option(home_row, id="home"))
         for view_id, label in VIEWS:
             row = Text(no_wrap=True, overflow="ellipsis")
             if view_id == "starred":
-                row.append(f" {icons.STAR}", style=palette.yellow)
+                row.append(f" {icons.STAR}", style=palette.text)
             elif view_id == "shuffle-all":
-                row.append(" \uf074", style=palette.peach)  # nf-fa-random
+                row.append(" \uf074", style=palette.text)  # nf-fa-random
             else:
                 row.append("  ", style=palette.vfaint)
             row.append(f" {label}", style=palette.text)
             options.append(Option(row, id=view_id))
         for p in self._playlists:
             row = Text(no_wrap=True, overflow="ellipsis")
-            row.append(f" {icons.LIST}", style=palette.lav)
+            row.append(f" {icons.LIST}", style=palette.text)
             row.append(f" {p.name}", style=palette.text)
             row.append(f" {p.song_count}\u2669", style=palette.vfaint)
             options.append(Option(row, id=f"pl:{p.id}"))
         new_row = Text(no_wrap=True)
-        new_row.append(f" {icons.PLUS}", style=palette.green)
+        new_row.append(f" {icons.PLUS}", style=palette.text)
         new_row.append(" new playlist", style=palette.sub)
         options.append(Option(new_row, id="pl-new"))
         if self._podcasts:
             for channel, episodes in self._podcasts:
                 row = Text(no_wrap=True, overflow="ellipsis")
-                row.append(" \uf2ce", style=palette.green)  # nf-fa-podcast
+                row.append(" \uf2ce", style=palette.text)  # nf-fa-podcast
                 row.append(f" {channel.title}", style=palette.text)
                 row.append(f" {len(episodes)}", style=palette.vfaint)
                 options.append(Option(row, id=f"podcast:{channel.id}"))
         if self._stations:
             row = Text(no_wrap=True, overflow="ellipsis")
-            row.append(" \uf519", style=palette.blue)  # nf-fa-broadcast_tower
+            row.append(" \uf519", style=palette.text)  # nf-fa-broadcast_tower
             row.append(" stations", style=palette.text)
             row.append(f" {len(self._stations)}", style=palette.vfaint)
             options.append(Option(row, id="radio"))
