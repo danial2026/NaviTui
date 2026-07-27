@@ -64,11 +64,6 @@ CONFIG = configmod.load(AppDirs("navitui").config_file.parent)
 # nf-fa-bookmark — as a \uXXXX escape (raw PUA glyphs don't survive patching)
 BOOKMARK_GLYPH = "\uf02e"
 
-# nerd-font glyphs kept as \uXXXX escapes (raw PUA does not survive patch
-# tooling): nf-fa-podcast + nf-fa-broadcast_tower for the two new sections
-PODCAST_GLYPH = "\uf2ce"
-RADIO_GLYPH = "\uf519"
-
 
 def _kb(action_id: str, action: str, description: str = "", show: bool = False) -> Binding:
     return Binding(CONFIG["keybinds"][action_id], action, description, show=show)
@@ -281,30 +276,52 @@ class NaviTuiApp(KitApp):
 
     #main { height: 1fr; }
     NavList { text-wrap: nowrap; text-overflow: ellipsis; }
-    .panel { border: round $kit-border; }
-    .panel:focus-within { border: round $kit-border-focus; }
+    .panel {
+        border: solid $kit-border;
+        padding: 0 0 0 0;
+    }
+    .panel:focus-within { border: solid $kit-border-focus; }
     .panel NavList { height: 1fr; }
     #sidebar-panel { width: 26; }
     #tracks-panel { width: 1fr; }
-    #side { width: 36; }
-    #art-panel { height: 40%; min-height: 12; border: round $kit-border; }
-    #queue-panel { height: 1fr; border: round $kit-border; }
+    #side { width: 34; }
+    #art-panel {
+        height: 40%; min-height: 10;
+        border: none;
+        background: transparent;
+    }
+    #queue-panel { height: 1fr; border: solid $kit-border; }
 
-    NowPlaying.playing { border: round $kit-border-alt; }
+    NowPlaying.playing { }
 
     #zen-info { display: none; }
+    #zen-progress { display: none; }
+    #zen-viz { display: none; }
 
-    /* zen / now-playing splash: hide everything but a big centered cover,
-       the track info line and the animated transport (all still driven by
-       the one heartbeat — no extra timers). */
+    /* zen / now-playing splash: fullscreen centered cover + info */
     .zen #sidebar-panel, .zen #split1, .zen #tracks-panel,
-    .zen #split2, .zen #queue-panel { display: none; }
-    .zen #side { width: 1fr; align: center middle; }
+    .zen #split2, .zen #queue-panel, .zen #topbar,
+    .zen #now, .zen Footer { display: none; }
+    .zen #side {
+        width: 1fr; align: center middle;
+        background: transparent;
+    }
     .zen #art-panel {
-        width: 60%; height: 1fr; max-width: 72;
+        width: 54%; height: 1fr; max-width: 80;
         border: none; content-align: center middle;
     }
-    .zen #zen-info { display: block; height: auto; margin: 1 0; }
+    .zen #zen-info {
+        display: block; height: auto; margin: 0 0 1 0;
+        background: transparent;
+    }
+    .zen #zen-viz {
+        display: block; height: 1; margin: 0 0 1 0;
+        content-align: center middle;
+    }
+    .zen #zen-progress {
+        display: block; height: 1; width: 50%;
+        content-align: center middle;
+    }
     """
 
     def __init__(self, client: SubsonicClient | None = None, ao: str | None = None) -> None:
@@ -386,6 +403,8 @@ class NaviTuiApp(KitApp):
             yield Splitter("#side", invert=True, on_resized=self._persist_width, id="split2")
             with Vertical(id="side"):
                 yield CoverArt(id="art-panel")
+                yield Static(id="zen-viz")
+                yield Static(id="zen-progress")
                 yield Static(id="zen-info")
                 with Vertical(id="queue-panel", classes="panel"):
                     yield ClickList(id="queue-list")
@@ -1149,51 +1168,39 @@ class NaviTuiApp(KitApp):
             home_row.append("★ ", style=palette.yellow)
             home_row.append("home", style=palette.text)
             options.append(Option(home_row, id="home"))
-            options.append(Option(Text(" "), disabled=True))
-        options.append(Option(Text(" tracks", style=f"bold {palette.dim}"), disabled=True))
         for view_id, label in VIEWS:
             row = Text(no_wrap=True, overflow="ellipsis")
-            glyph, color = ("", palette.peach) if view_id == "shuffle-all" else ("◍", palette.mauve)
             if view_id == "starred":
-                glyph, color = icons.STAR, palette.yellow
-            row.append(f"{glyph} ", style=color)
-            row.append(label, style=palette.text)
+                row.append(f" {icons.STAR}", style=palette.yellow)
+            elif view_id == "shuffle-all":
+                row.append(" \uf074", style=palette.peach)  # nf-fa-random
+            else:
+                row.append("  ", style=palette.vfaint)
+            row.append(f" {label}", style=palette.text)
             options.append(Option(row, id=view_id))
-        options.append(Option(Text(" "), disabled=True))
-        options.append(Option(Text(" playlists", style=f"bold {palette.dim}"), disabled=True))
         for p in self._playlists:
             row = Text(no_wrap=True, overflow="ellipsis")
-            row.append(f"{icons.LIST} ", style=palette.lav)
-            row.append(p.name, style=palette.text)
-            row.append(f" {p.song_count}♪", style=palette.vfaint)
+            row.append(f" {icons.LIST}", style=palette.lav)
+            row.append(f" {p.name}", style=palette.text)
+            row.append(f" {p.song_count}\u2669", style=palette.vfaint)
             options.append(Option(row, id=f"pl:{p.id}"))
         new_row = Text(no_wrap=True)
-        new_row.append(f"{icons.PLUS} ", style=palette.green)
-        new_row.append("new playlist", style=palette.sub)
+        new_row.append(f" {icons.PLUS}", style=palette.green)
+        new_row.append(" new playlist", style=palette.sub)
         options.append(Option(new_row, id="pl-new"))
-
-        # podcasts: one row per subscribed channel → its episodes; the section
-        # only appears once the server tells us there are any (no empty header)
         if self._podcasts:
-            options.append(Option(Text(" "), disabled=True))
-            options.append(Option(Text(" podcasts", style=f"bold {palette.dim}"), disabled=True))
             for channel, episodes in self._podcasts:
                 row = Text(no_wrap=True, overflow="ellipsis")
-                row.append(f"{PODCAST_GLYPH} ", style=palette.green)
-                row.append(channel.title, style=palette.text)
+                row.append(" \uf2ce", style=palette.green)  # nf-fa-podcast
+                row.append(f" {channel.title}", style=palette.text)
                 row.append(f" {len(episodes)}", style=palette.vfaint)
                 options.append(Option(row, id=f"podcast:{channel.id}"))
-
-        # internet radio: a single row loading every station into the pane
         if self._stations:
-            options.append(Option(Text(" "), disabled=True))
-            options.append(Option(Text(" internet radio", style=f"bold {palette.dim}"), disabled=True))
             row = Text(no_wrap=True, overflow="ellipsis")
-            row.append(f"{RADIO_GLYPH} ", style=palette.blue)
-            row.append("stations", style=palette.text)
+            row.append(" \uf519", style=palette.blue)  # nf-fa-broadcast_tower
+            row.append(" stations", style=palette.text)
             row.append(f" {len(self._stations)}", style=palette.vfaint)
             options.append(Option(row, id="radio"))
-
         had_focus = ol.has_focus
         ol.clear_options()
         ol.add_options(options)
@@ -1397,24 +1404,22 @@ class NaviTuiApp(KitApp):
 
     # ── row rendering ─────────────────────────────────────────────────
     def _song_row(self, s: Song, index: int) -> Option:
-        # id is the row's position, not s.id: a playlist can list the same song
-        # twice and OptionList requires unique ids (handlers resolve by index)
         current = self.queue.current
         is_current = current is not None and s.id == current.id
         row = Text(no_wrap=True, overflow="ellipsis")
         if s.id in self._selected:
-            # a selected row wins the marker column: a filled check
-            row.append(f" {icons.CHECK_CIRCLE} ", style=palette.green)
+            row.append(f" {icons.CHECK_CIRCLE}", style=palette.green)
+        elif is_current:
+            row.append(f" {PLAY_GLYPH}", style=palette.green)
         else:
-            marker = anim.NOTE_FRAMES[0] if is_current else "·"
-            row.append(f" {marker} ", style=palette.blue if is_current else palette.vfaint)
-        row.append(s.title, style=f"bold {palette.blue}" if is_current else palette.text)
+            row.append("  ", style=palette.vfaint)
+        row.append(f" {s.title}", style=f"bold {palette.blue}" if is_current else palette.text)
         if self.client is not None and self.client.cached_stream(s.id):
-            row.append(f" {icons.CHECK}", style=palette.green)  # pinned for offline
+            row.append(f" {icons.CHECK}", style=palette.green)
         if s.starred:
             row.append(f" {icons.STAR}", style=palette.yellow)
         if s.user_rating:
-            row.append(f" {chr(0x2460 + s.user_rating - 1)}", style=palette.peach)  # ①-⑤
+            row.append(f" {chr(0x2460 + s.user_rating - 1)}", style=palette.peach)
         row.append(f"  {s.artist}", style=palette.dim)
         row.append(f" · {anim.fmt_time(s.duration)}", style=palette.vfaint)
         return Option(row, id=f"trk-{index}")
@@ -2100,7 +2105,6 @@ class NaviTuiApp(KitApp):
         for i, song in enumerate(self.queue.songs):
             row = Text(no_wrap=True, overflow="ellipsis")
             if i < self.queue.index:
-                # already played: dim it way down, scroll up to revisit
                 row.append(f"{i + 1:>2d} ", style=palette.vfaint)
                 row.append(song.title, style=palette.faint)
                 row.append(f"  {song.artist}", style=palette.vfaint)
@@ -2118,8 +2122,6 @@ class NaviTuiApp(KitApp):
         ol = self.query_one("#queue-list", NavList)
         if options and 0 <= self.queue.index < len(options):
             ol.highlighted = self.queue.index
-            # pin the current track to the top so the panel reads "up next";
-            # only when the track changes, so manual scrollback isn't fought
             if self.queue.index != self._queue_scrolled_to:
                 self._queue_scrolled_to = self.queue.index
                 index = self.queue.index
@@ -2129,7 +2131,7 @@ class NaviTuiApp(KitApp):
         upcoming = self.queue.songs[self.queue.index + 1 :] if self.queue.index >= 0 else self.queue.songs
         remaining = sum(s.duration for s in upcoming)
         panel.border_subtitle = (
-            f"{len(upcoming)}♪ up next · {anim.fmt_time(remaining)}" if self.queue.songs else None
+            f"{len(upcoming)}\u2669 up next \u00b7 {anim.fmt_time(remaining)}" if self.queue.songs else None
         )
 
     def action_enqueue(self, play_next: bool) -> None:
@@ -3073,17 +3075,39 @@ class NaviTuiApp(KitApp):
         scrolling window of synced lyrics when the song has them."""
         song = self.queue.current
         info = self.query_one("#zen-info", Static)
+        viz = self.query_one("#zen-viz", Static)
+        prog = self.query_one("#zen-progress", Static)
         t = Text(justify="center")
         if song is None:
             t.append("nothing playing", style=palette.dim)
             info.update(t)
+            viz.update(Text())
+            prog.update(Text())
             return
+
         t.append(song.title, style=f"bold {palette.text}")
         if song.starred:
             t.append(f" {icons.STAR}", style=palette.yellow)
         t.append(f"\n{song.artist}", style=palette.sub)
         if song.album:
             t.append(f"\n{song.album}", style=palette.dim)
+
+        # progress bar + time
+        pos = self.player.position if self.player else 0.0
+        dur = song.duration or 1.0
+        frac = pos / dur if dur > 0 else 0.0
+        p = Text(justify="center")
+        p.append(f"{anim.fmt_time(pos)} ", style=palette.vfaint)
+        p.append_text(anim.smooth_bar(frac, 20, head_pulse=0.3 if self.player and not self.player.paused else 0.0))
+        p.append(f" {anim.fmt_time(dur)}", style=palette.vfaint)
+        prog.update(p)
+
+        # visualizer in zen
+        v = self.query_one("#now", NowPlaying)
+        vx = Text(justify="center")
+        vx.append_text(v.viz.render())
+        viz.update(vx)
+
         # fetch this song's timed lyrics once (the heartbeat calls us again as
         # the fetch lands and as the position advances the highlighted line)
         if self._zen_lyrics_for != song.id:
@@ -3109,7 +3133,7 @@ class NaviTuiApp(KitApp):
         if self._zen and self.queue.current is not None and self.queue.current.id == song.id:
             self._zen_lyrics = synced
 
-    def _zen_lyric_window(self, radius: int = 3) -> Text | None:
+    def _zen_lyric_window(self, radius: int = 4) -> Text | None:
         """A centred window of synced lyrics around the current line, or None
         when the song has no timed lyrics."""
         synced = self._zen_lyrics
@@ -3129,12 +3153,12 @@ class NaviTuiApp(KitApp):
         for i in range(lo, hi):
             line = synced[i][1] or " "
             if i == current:
-                style = f"bold {palette.blue}"
+                style = f"bold {palette.text}"
+                out.append(f"  {line}  \n", style=style)
             elif abs(i - current) == 1:
-                style = palette.sub
+                out.append(f"{line}\n", style=palette.sub)
             else:
-                style = palette.dim
-            out.append(line + "\n", style=style)
+                out.append(f"{line}\n", style=palette.dim)
         return out
 
     def on_kit_theme_changed(self) -> None:

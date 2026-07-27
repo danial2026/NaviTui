@@ -48,7 +48,7 @@ class OnboardingScreen(Screen):
     OnboardingScreen { align: center middle; }
     OnboardingScreen #onboard-box {
         width: 58; height: auto;
-        border: round $kit-border-focus;
+        border: solid $kit-border-focus;
         background: $kit-modal-bg;
         padding: 1 3;
     }
@@ -56,10 +56,11 @@ class OnboardingScreen(Screen):
     OnboardingScreen Visualizer { margin: 0 2 0 0; }
     OnboardingScreen Input {
         background: transparent;
-        border: round $kit-border;
+        border: none;
+        border-bottom: solid $kit-border;
         margin-bottom: 0;
     }
-    OnboardingScreen Input:focus { border: round $kit-border-focus; }
+    OnboardingScreen Input:focus { border-bottom: solid $kit-border-focus; }
     OnboardingScreen #onboard-status { height: 2; padding: 0 1; }
     """
 
@@ -173,11 +174,11 @@ class InputModal(ModalScreen):
     InputModal { align: center middle; background: $kit-overlay; }
     InputModal #input-box {
         width: 52; height: auto;
-        background: $kit-modal-bg; border: round $kit-border-focus; padding: 1 2;
+        background: $kit-modal-bg; border: solid $kit-border-focus; padding: 1 2;
     }
     InputModal Static { background: $kit-modal-bg; }
-    InputModal Input { background: transparent; border: round $kit-border; }
-    InputModal Input:focus { border: round $kit-border-focus; }
+    InputModal Input { background: transparent; border: none; border-bottom: solid $kit-border; }
+    InputModal Input:focus { border-bottom: solid $kit-border-focus; }
     """
 
     def __init__(self, title: str, placeholder: str = "") -> None:
@@ -232,7 +233,7 @@ class LyricsModal(ModalScreen):
     LyricsModal { align: center middle; background: $kit-overlay; }
     LyricsModal #lyrics-box {
         width: 64; height: auto; max-height: 85%;
-        background: $kit-modal-bg; border: round $kit-border-focus; padding: 1 2;
+        background: $kit-modal-bg; border: solid $kit-border-focus; padding: 1 2;
     }
     LyricsModal Static { background: $kit-modal-bg; }
     LyricsModal #lyrics-head { height: 1; }
@@ -355,7 +356,7 @@ class StatsModal(ModalScreen):
     StatsModal { align: center middle; background: $kit-overlay; }
     StatsModal #stats-box {
         width: 66; height: auto; max-height: 90%;
-        background: $kit-modal-bg; border: round $kit-border-focus; padding: 1 2;
+        background: $kit-modal-bg; border: solid $kit-border-focus; padding: 1 2;
     }
     StatsModal Static { background: $kit-modal-bg; }
     StatsModal #stats-head { height: 1; margin-bottom: 1; }
@@ -468,10 +469,10 @@ class SearchModal(ModalScreen):
     SearchModal { align: center middle; background: $kit-overlay; }
     SearchModal #search-box {
         width: 72; height: auto; max-height: 80%;
-        background: $kit-modal-bg; border: round $kit-border-focus; padding: 1 1;
+        background: $kit-modal-bg; border: solid $kit-border-focus; padding: 1 1;
     }
-    SearchModal Input { background: transparent; border: round $kit-border; }
-    SearchModal Input:focus { border: round $kit-border-focus; }
+    SearchModal Input { background: transparent; border: none; border-bottom: solid $kit-border; }
+    SearchModal Input:focus { border-bottom: solid $kit-border-focus; }
     SearchModal #search-results {
         height: auto; max-height: 24;
         text-wrap: nowrap; text-overflow: ellipsis;
