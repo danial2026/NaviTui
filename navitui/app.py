@@ -282,10 +282,10 @@ class NaviTuiApp(KitApp):
     #main { height: 1fr; }
     NavList { text-wrap: nowrap; text-overflow: ellipsis; }
     .panel {
-        border: round $kit-border;
+        border: solid $kit-border;
         padding: 0 0 0 0;
     }
-    .panel:focus-within { border: round $kit-border-focus; }
+    .panel:focus-within { border: solid $kit-border-focus; }
     .panel NavList { height: 1fr; }
     #sidebar-panel { width: 26; }
     #tracks-panel { width: 1fr; }
@@ -296,7 +296,7 @@ class NaviTuiApp(KitApp):
         border: none;
         background: transparent;
     }
-    #queue-panel { height: 1fr; border: round $kit-border; }
+    #queue-panel { height: 1fr; border: solid $kit-border; }
 
     NowPlaying.playing { }
 
