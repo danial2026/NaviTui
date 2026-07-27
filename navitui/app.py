@@ -3157,7 +3157,7 @@ class NaviTuiApp(KitApp):
 
         t.append(song.title, style=f"bold {palette.text}")
         if song.starred:
-            t.append(f" {icons.STAR}", style=palette.yellow)
+            t.append(f" {icons.STAR}", style=palette.text)
         t.append(f"\n{song.artist}", style=palette.sub)
         if song.album:
             t.append(f"\n{song.album}", style=palette.dim)
