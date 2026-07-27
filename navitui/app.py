@@ -312,24 +312,28 @@ class NaviTuiApp(KitApp):
     .zen #split2, .zen #queue-panel, .zen #topbar,
     .zen #now, .zen Footer { display: none; }
     .zen #side {
-        width: 1fr; align: center middle;
+        width: 1fr;
+        align: center middle;
+        content-align: center middle;
         background: transparent;
     }
     .zen #art-panel {
-        width: 44%; height: 45%; max-width: 64;
-        border: none; content-align: center middle;
+        width: 48; height: 24;
+        border: none;
+        background: transparent;
+        content-align: center middle;
     }
     .zen #zen-viz {
-        display: block; height: 1; margin: 0 4 0 4;
+        display: block; height: 1; width: 100%;
         content-align: center middle;
     }
     .zen #zen-progress {
-        display: block; height: 1; width: 70%;
-        margin: 1 0 0 0; content-align: center middle;
+        display: block; height: 1; width: 50%;
+        content-align: center middle;
     }
     .zen #zen-info {
-        display: block; height: auto;
-        background: transparent; margin: 0 2 0 2;
+        display: block; height: auto; width: 100%;
+        background: transparent;
         content-align: center middle;
     }
     """
