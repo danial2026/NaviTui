@@ -3144,7 +3144,6 @@ class NaviTuiApp(KitApp):
         else:
             side.styles.width = 34
             side.styles.height = "1fr"
-            side.styles.align = ("start", "start")
             art.styles.width = "auto"
             art.styles.height = "40%"
             art.styles.min_width = None
