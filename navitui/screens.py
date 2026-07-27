@@ -891,7 +891,7 @@ class ServerSwitcherModal(ModalScreen):
     def _rebuild_list(self) -> None:
         ol = self.query_one("#srv-list", NavList)
         while ol.option_count:
-            ol.remove_option_at(0)
+            ol.remove_option_at_index(0)
         for name in self._profiles:
             row = Text("  ", no_wrap=True, overflow="ellipsis")
             active = name == self._active
@@ -900,12 +900,11 @@ class ServerSwitcherModal(ModalScreen):
             ol.add_option(Option(row, id=f"prf:{name}"))
         if not self._profiles:
             ol.add_option(Option(Text("  no servers configured", style=palette.dim), disabled=True))
-        ol.add_option(Option(Text("")))
         add_row = Text("  ")
         add_row.append("➕ ", style=palette.green)
         add_row.append("add server", style=palette.blue)
         ol.add_option(Option(add_row, id="__add__"))
-        first = next((i for i in range(ol.option_count) if not ol.get_option_at(i).disabled), 0)
+        first = next((i for i in range(ol.option_count) if not ol.get_option_at_index(i).disabled), 0)
         ol.highlighted = first
         ol.focus()
 
@@ -979,7 +978,7 @@ class ServerSwitcherModal(ModalScreen):
         idx = ol.highlighted
         if idx is None:
             return
-        opt = ol.get_option_at(idx)
+        opt = ol.get_option_at_index(idx)
         if opt.id is None or not opt.id.startswith("prf:"):
             return
         name = opt.id.split(":", 1)[1]
