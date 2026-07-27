@@ -489,20 +489,22 @@ class NaviTuiApp(KitApp):
             self.notify(playermod.INSTALL_HINTS, severity="warning", timeout=15)
 
         if self.client is None:
-            config = self.dirs.load_config()
-            if all(config.get(k) for k in ("server", "username", "token", "salt")):
+            profiles = self._profiles()
+            if profiles:
+                active = self.dirs.load_state().get("active_profile", "")
+                if active not in profiles:
+                    active = next(iter(profiles))
+                    self.dirs.save_state({"active_profile": active})
+                creds = profiles[active]
                 self.client = SubsonicClient(
-                    config["server"], config["username"], config["token"], config["salt"],
+                    creds["server"], creds["username"], creds["token"], creds["salt"],
                     art_dir=self.dirs.cache_dir / "art",
                     audio_dir=self.dirs.cache_dir / "audio",
                     max_bitrate=int(CONFIG["max_bitrate"]),
                     stream_format=str(CONFIG["stream_format"]),
                 )
             else:
-                self.push_screen(
-                    OnboardingScreen(config.get("server", ""), config.get("username", "")),
-                    self._onboarded,
-                )
+                self.push_screen(OnboardingScreen(), self._onboarded)
                 return
         self._start()
 
@@ -686,20 +688,23 @@ class NaviTuiApp(KitApp):
 
     # ── multi-server switching ────────────────────────────────────────
     def _profiles(self) -> dict:
-        """Saved Navidrome profiles, keyed by name, from a [profiles.<name>]
-        block in the secrets file: each has server/username/token/salt."""
-        try:
-            profiles = self.dirs.load_config().get("profiles")
-        except Exception:
-            profiles = None
-        return profiles if isinstance(profiles, dict) else {}
+        """Saved Navidrome profiles, keyed by name, from [profiles.<name>]
+        blocks in config.toml. Falls back to legacy flat keys (server, username,
+        token, salt) at the top level, wrapped as profile "default"."""
+        cfg = self.dirs.load_config()
+        profiles = cfg.get("profiles")
+        if isinstance(profiles, dict):
+            return profiles
+        if all(cfg.get(k) for k in ("server", "username", "token", "salt")):
+            return {"default": {k: cfg[k] for k in ("server", "username", "token", "salt")}}
+        return {}
 
     def action_switch_server(self) -> None:
         profiles = self._profiles()
         active = self.dirs.load_state().get("active_profile", "")
-        self.push_screen(ServerSwitcherModal(list(profiles.keys()), active), self._server_picked)
+        self.push_screen(ServerSwitcherModal(profiles, active), self._server_picked)
 
-    def _server_picked(self, name) -> None:
+    def _server_picked(self, name: str | None) -> None:
         if not name:
             return
         creds = self._profiles().get(name)
@@ -890,9 +895,11 @@ class NaviTuiApp(KitApp):
     def _onboarded(self, config: dict | None) -> None:
         if not config:
             return
-        self._save_secrets(config)
+        creds = {k: config[k] for k in ("server", "username", "token", "salt")}
+        self._save_profiles({"default": creds})
+        self.dirs.save_state({"active_profile": "default"})
         self.client = SubsonicClient(
-            config["server"], config["username"], config["token"], config["salt"],
+            creds["server"], creds["username"], creds["token"], creds["salt"],
             art_dir=self.dirs.cache_dir / "art",
             audio_dir=self.dirs.cache_dir / "audio",
             max_bitrate=int(CONFIG["max_bitrate"]),
@@ -901,10 +908,16 @@ class NaviTuiApp(KitApp):
         self.notify("welcome to NaviTui ♪", timeout=4)
         self._start()
 
-    def _save_secrets(self, config: dict) -> None:
+    def _save_profiles(self, profiles: dict) -> None:
+        """Write a {name: {creds}} dict as [profiles.<name>] sections."""
         path = self.dirs.config_file
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text("".join(f'{k} = "{v}"\n' for k, v in config.items()))
+        lines = []
+        for name, creds in profiles.items():
+            lines.append(f"[profiles.{name}]")
+            for k, v in creds.items():
+                lines.append(f'{k} = "{v}"')
+        path.write_text("\n".join(lines) + "\n")
         path.chmod(0o600)
 
     def _start(self) -> None:

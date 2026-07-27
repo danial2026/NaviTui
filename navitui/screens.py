@@ -181,15 +181,16 @@ class InputModal(ModalScreen):
     InputModal Input:focus { border-bottom: solid $kit-border-focus; }
     """
 
-    def __init__(self, title: str, placeholder: str = "") -> None:
+    def __init__(self, title: str, placeholder: str = "", password: bool = False) -> None:
         super().__init__()
         self._title = title
         self._placeholder = placeholder
+        self._password = password
 
     def compose(self) -> ComposeResult:
         with Vertical(id="input-box"):
             yield Static(Text(self._title, style=f"bold {palette.sub}"))
-            yield Input(placeholder=self._placeholder, id="input-value")
+            yield Input(placeholder=self._placeholder, id="input-value", password=self._password)
 
     def on_mount(self) -> None:
         pop_in(self.query_one("#input-box"))
@@ -837,69 +838,178 @@ class AudioDeviceSwitcherModal(ModalScreen):
 
 
 class ServerSwitcherModal(ModalScreen):
-    """Pick a saved Navidrome profile. Dismisses with the profile name, or None
-    on escape. `names` is the list of profile names; `active` is the current."""
+    """Pick, add, or remove Navidrome profiles. Dismisses with the selected
+    profile name, or None on escape. `profiles` is `{name: {creds}}`;
+    `active` is the current profile name."""
 
-    BINDINGS = [Binding("escape", "cancel", show=False), Binding("q", "cancel", show=False)]
+    BINDINGS = [
+        Binding("escape", "cancel", show=False),
+        Binding("q", "cancel", show=False),
+        Binding("a", "add_server", "add", show=True),
+        Binding("d", "delete_server", "del", show=True),
+    ]
 
     DEFAULT_CSS = """
     ServerSwitcherModal { align: center middle; background: $kit-overlay; }
     ServerSwitcherModal #srv-box {
         width: 54; height: auto; max-height: 80%;
-        background: $kit-modal-bg; border: round $kit-border-focus; padding: 1 2;
+        background: $kit-modal-bg; border: solid $kit-border-focus; padding: 1 2;
     }
     ServerSwitcherModal Static { background: $kit-modal-bg; }
     ServerSwitcherModal #srv-list { height: auto; max-height: 18; }
     """
 
-    def __init__(self, names: list[str], active: str) -> None:
+    def __init__(self, profiles: dict, active: str) -> None:
         super().__init__()
-        self._names = names
+        self._profiles = dict(profiles)
         self._active = active
 
     def compose(self) -> ComposeResult:
         with Vertical(id="srv-box"):
             head = Text()
             head.append(f"{icons.USER} ", style=palette.peach)
-            head.append("switch server", style=f"bold {palette.sub}")
+            head.append("server manager", style=f"bold {palette.sub}")
             yield Static(head)
             yield NavList(id="srv-list")
             yield Static(self._hint(), id="srv-hint")
 
     def _hint(self) -> Text:
         t = Text("\n")
-        t.append("profiles live in ", style=palette.vfaint)
-        t.append("[profiles.<name>]", style=palette.dim)
-        t.append(" in your config", style=palette.vfaint)
+        t.append("enter", style=palette.blue)
+        t.append(" select  ·  ", style=palette.vfaint)
+        t.append("a", style=palette.blue)
+        t.append(" add  ·  ", style=palette.vfaint)
+        t.append("d", style=palette.blue)
+        t.append(" delete", style=palette.vfaint)
         return t
 
     def on_mount(self) -> None:
         pop_in(self.query_one("#srv-box"))
         settle_pop_in(self, "#srv-box")
+        self._rebuild_list()
+
+    def _rebuild_list(self) -> None:
         ol = self.query_one("#srv-list", NavList)
-        opts: list[Option] = []
-        if not self._names:
-            opts.append(Option(Text("  no profiles configured", style=palette.dim), disabled=True))
-        for i, name in enumerate(self._names):
+        while ol.option_count:
+            ol.remove_option_at(0)
+        for name in self._profiles:
             row = Text("  ", no_wrap=True, overflow="ellipsis")
             active = name == self._active
             row.append("● " if active else "  ", style=palette.green if active else palette.vfaint)
             row.append(name, style=palette.text if active else palette.sub)
-            opts.append(Option(row, id=f"srv:{i}"))
-        ol.add_options(opts)
-        first = next((i for i, o in enumerate(opts) if not o.disabled), None)
-        if first is not None:
-            ol.highlighted = first
+            ol.add_option(Option(row, id=f"prf:{name}"))
+        if not self._profiles:
+            ol.add_option(Option(Text("  no servers configured", style=palette.dim), disabled=True))
+        ol.add_option(Option(Text("")))
+        add_row = Text("  ")
+        add_row.append("➕ ", style=palette.green)
+        add_row.append("add server", style=palette.blue)
+        ol.add_option(Option(add_row, id="__add__"))
+        first = next((i for i in range(ol.option_count) if not ol.get_option_at(i).disabled), 0)
+        ol.highlighted = first
         ol.focus()
 
     @on(OptionList.OptionSelected, "#srv-list")
     def _selected(self, event: OptionList.OptionSelected) -> None:
         oid = event.option.id
-        if oid and oid.startswith("srv:"):
-            self.dismiss(self._names[int(oid.split(":", 1)[1])])
+        if oid == "__add__":
+            self.action_add_server()
+        elif oid and oid.startswith("prf:"):
+            self.dismiss(oid.split(":", 1)[1])
 
     def action_cancel(self) -> None:
         self.dismiss(None)
+
+    # ── add server ────────────────────────────────────────────────────
+    def action_add_server(self) -> None:
+        self.app.push_screen(
+            InputModal("profile name", "label (e.g. home, office)"),
+            self._add_name,
+        )
+
+    def _add_name(self, name: str | None) -> None:
+        if not name:
+            return
+        name = name.strip()
+        if name in self._profiles:
+            self.app.notify(f"profile '{name}' already exists", severity="warning", timeout=3)
+            return
+        self._new_name = name
+        self.app.push_screen(
+            InputModal("server URL", "https://music.example.com"),
+            self._add_server,
+        )
+
+    def _add_server(self, url: str | None) -> None:
+        if not url:
+            return
+        self._new_server = url.strip()
+        self.app.push_screen(
+            InputModal("username", "navidrome username"),
+            self._add_user,
+        )
+
+    def _add_user(self, user: str | None) -> None:
+        if not user:
+            return
+        self._new_user = user.strip()
+        self.app.push_screen(
+            InputModal("password", "navidrome password", password=True),
+            self._add_pass,
+        )
+
+    def _add_pass(self, pw: str | None) -> None:
+        if not pw:
+            return
+        server = normalize_server(self._new_server)
+        token, salt = make_token(pw)
+        self._profiles[self._new_name] = {
+            "server": server,
+            "username": self._new_user,
+            "token": token,
+            "salt": salt,
+        }
+        self._save_config()
+        self._rebuild_list()
+        self.app.notify(f"added server '{self._new_name}'", timeout=3)
+
+    # ── delete server ─────────────────────────────────────────────────
+    def action_delete_server(self) -> None:
+        ol = self.query_one("#srv-list", NavList)
+        idx = ol.highlighted
+        if idx is None:
+            return
+        opt = ol.get_option_at(idx)
+        if opt.id is None or not opt.id.startswith("prf:"):
+            return
+        name = opt.id.split(":", 1)[1]
+        self._pending_del = name
+        self.app.push_screen(
+            InputModal("", f'delete "{name}"? type "yes" to confirm'),
+            self._delete_done,
+        )
+
+    def _delete_done(self, result: str | None) -> None:
+        if result and result.strip().lower() == "yes":
+            name = self._pending_del
+            self._profiles.pop(name, None)
+            if self._active == name:
+                self._active = ""
+            self._save_config()
+            self._rebuild_list()
+            self.app.notify(f"removed server '{name}'", timeout=3)
+
+    # ── persist profiles back to config.toml ──────────────────────────
+    def _save_config(self) -> None:
+        path = self.app.dirs.config_file
+        path.parent.mkdir(parents=True, exist_ok=True)
+        lines = []
+        for name, creds in self._profiles.items():
+            lines.append(f"[profiles.{name}]")
+            for k, v in creds.items():
+                lines.append(f'{k} = "{v}"')
+        path.write_text("\n".join(lines) + "\n")
+        path.chmod(0o600)
 
 
 class PlaylistPickerModal(ModalScreen):
