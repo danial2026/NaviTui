@@ -25,6 +25,18 @@ from navitui.models import SearchResults
 from navitui.widgets import Logo, Visualizer
 
 
+# Shared modal styling: transparent backgrounds, extra border-radius, clean look
+_MODAL_COMMON = """
+    background: transparent;
+    border: tall $kit-border-focus;
+    padding: 1 2;
+"""
+_MODAL_BOX_COMMON = """
+    background: transparent;
+    border: none;
+"""
+
+
 def settle_pop_in(screen, box_selector: str) -> None:
     """textual 8 sharp edge: `Widget.visual_style` caches the blended text
     background while an ancestor's opacity is still animating (the cache key
@@ -39,17 +51,74 @@ def settle_pop_in(screen, box_selector: str) -> None:
     screen.set_timer(0.25, bust)
 
 
+class NaviTuiHelpModal(ModalScreen):
+    """Keybinding cheatsheet — transparent variant matching the main app style."""
+
+    BINDINGS = [
+        Binding("escape", "close_modal", show=False),
+        Binding("question_mark", "close_modal", show=False),
+        Binding("q", "close_modal", show=False),
+    ]
+
+    DEFAULT_CSS = """
+    NaviTuiHelpModal { align: center middle; background: transparent; }
+    NaviTuiHelpModal #kit-help-box {
+        width: 56; height: auto; max-height: 85%;
+        background: $kit-modal-bg 85%;
+        border: tall $kit-border-focus;
+        padding: 1 2;
+    }
+    NaviTuiHelpModal #kit-help-title { padding: 0 1 0 1; }
+    NaviTuiHelpModal #kit-help-text { padding: 0 0; }
+    NaviTuiHelpModal #kit-help-body { height: auto; max-height: 28; scrollbar-size-vertical: 1; }
+    """
+
+    def __init__(self, sections: list[tuple[str, list[tuple[str, str]]]], title: str = "keys") -> None:
+        super().__init__()
+        self._sections = sections
+        self._title = title
+
+    def compose(self) -> ComposeResult:
+        from ricekit.widgets import KitScroll
+
+        with Vertical(id="kit-help-box"):
+            t = Text()
+            t.append(f"{icons.KEYBOARD} ", style=palette.peach)
+            t.append(self._title, style=f"bold {palette.sub}")
+            yield Static(t, id="kit-help-title")
+            with KitScroll(id="kit-help-body"):
+                yield Static(self._render_sections(), id="kit-help-text")
+
+    def _render_sections(self) -> Text:
+        body = Text()
+        for i, (section, rows) in enumerate(self._sections):
+            if i:
+                body.append("\n")
+            body.append(f" {section}\n", style=f"bold {palette.text}")
+            for key, desc in rows:
+                body.append(f"  {key}", style=palette.blue)
+                body.append(f"  {desc}\n", style=palette.sub)
+        return body
+
+    def on_mount(self) -> None:
+        pop_in(self.query_one("#kit-help-box"))
+        settle_pop_in(self, "#kit-help-box")
+
+    def action_close_modal(self) -> None:
+        self.dismiss(None)
+
+
 class OnboardingScreen(Screen):
     """Server + credentials, validated live. Dismisses with the config dict."""
 
     BINDINGS = [Binding("escape", "quit_app", "quit", show=True)]
 
     DEFAULT_CSS = """
-    OnboardingScreen { align: center middle; }
+    OnboardingScreen { align: center middle; background: transparent; }
     OnboardingScreen #onboard-box {
         width: 58; height: auto;
-        border: round $kit-border-focus;
-        background: $kit-modal-bg;
+        background: $kit-modal-bg 85%;
+        border: tall $kit-border-focus;
         padding: 1 3;
     }
     OnboardingScreen #onboard-head { height: 1; margin-bottom: 1; }
@@ -171,12 +240,14 @@ class InputModal(ModalScreen):
     BINDINGS = [Binding("escape", "cancel", show=False)]
 
     DEFAULT_CSS = """
-    InputModal { align: center middle; background: $kit-overlay; }
+    InputModal { align: center middle; background: transparent; }
     InputModal #input-box {
         width: 52; height: auto;
-        background: $kit-modal-bg; border: round $kit-border-focus; padding: 1 2;
+        background: $kit-modal-bg 85%;
+        border: tall $kit-border-focus;
+        padding: 1 2;
     }
-    InputModal Static { background: $kit-modal-bg; }
+    InputModal Static { background: transparent; }
     InputModal Input { background: transparent; border: none; border-bottom: solid $kit-border; }
     InputModal Input:focus { border-bottom: solid $kit-border-focus; }
     """
@@ -231,12 +302,14 @@ class LyricsModal(ModalScreen):
     ]
 
     DEFAULT_CSS = """
-    LyricsModal { align: center middle; background: $kit-overlay; }
+    LyricsModal { align: center middle; background: transparent; }
     LyricsModal #lyrics-box {
         width: 64; height: 80%;
-        background: $kit-modal-bg; border: round $kit-border-focus; padding: 1 2;
+        background: $kit-modal-bg 85%;
+        border: tall $kit-border-focus;
+        padding: 1 2;
     }
-    LyricsModal Static { background: $kit-modal-bg; }
+    LyricsModal Static { background: transparent; }
     LyricsModal #lyrics-head { height: 1; }
     LyricsModal #lyrics-body { height: auto; max-height: 32; scrollbar-size-vertical: 1; }
     LyricsModal #lyrics-text { height: auto; }
@@ -354,12 +427,14 @@ class StatsModal(ModalScreen):
     ]
 
     DEFAULT_CSS = """
-    StatsModal { align: center middle; background: $kit-overlay; }
+    StatsModal { align: center middle; background: transparent; }
     StatsModal #stats-box {
         width: 56; height: auto; max-height: 80%;
-        background: $kit-modal-bg; border: round $kit-border-focus; padding: 1 2;
+        background: $kit-modal-bg 85%;
+        border: tall $kit-border-focus;
+        padding: 1 2;
     }
-    StatsModal Static { background: $kit-modal-bg; }
+    StatsModal Static { background: transparent; }
     StatsModal #stats-head { height: 1; margin-bottom: 1; }
     StatsModal #stats-body { height: auto; max-height: 30; scrollbar-size-vertical: 1; }
     """
@@ -467,10 +542,12 @@ class SearchModal(ModalScreen):
     ]
 
     DEFAULT_CSS = """
-    SearchModal { align: center middle; background: $kit-overlay; }
+    SearchModal { align: center middle; background: transparent; }
     SearchModal #search-box {
         width: 68; height: auto; max-height: 80%;
-        background: $kit-modal-bg; border: round $kit-border-focus; padding: 1 2;
+        background: $kit-modal-bg 85%;
+        border: tall $kit-border-focus;
+        padding: 1 2;
     }
     SearchModal Input { background: transparent; border: none; border-bottom: solid $kit-border; }
     SearchModal Input:focus { border-bottom: solid $kit-border-focus; }
@@ -641,12 +718,14 @@ class EqualizerModal(ModalScreen):
     ]
 
     DEFAULT_CSS = """
-    EqualizerModal { align: center middle; background: $kit-overlay; }
+    EqualizerModal { align: center middle; background: transparent; }
     EqualizerModal #eq-box {
         width: 60; height: auto;
-        background: $kit-modal-bg; border: round $kit-border-focus; padding: 1 2;
+        background: $kit-modal-bg 85%;
+        border: tall $kit-border-focus;
+        padding: 1 2;
     }
-    EqualizerModal Static { background: $kit-modal-bg; }
+    EqualizerModal Static { background: transparent; }
     EqualizerModal #eq-head { height: 1; margin-bottom: 1; }
     """
 
@@ -784,12 +863,14 @@ class AudioDeviceSwitcherModal(ModalScreen):
     BINDINGS = [Binding("escape", "cancel", show=False), Binding("q", "cancel", show=False)]
 
     DEFAULT_CSS = """
-    AudioDeviceSwitcherModal { align: center middle; background: $kit-overlay; }
+    AudioDeviceSwitcherModal { align: center middle; background: transparent; }
     AudioDeviceSwitcherModal #dev-box {
         width: 60; height: auto; max-height: 80%;
-        background: $kit-modal-bg; border: round $kit-border-focus; padding: 1 2;
+        background: $kit-modal-bg 85%;
+        border: tall $kit-border-focus;
+        padding: 1 2;
     }
-    AudioDeviceSwitcherModal Static { background: $kit-modal-bg; }
+    AudioDeviceSwitcherModal Static { background: transparent; }
     AudioDeviceSwitcherModal #dev-list { height: auto; max-height: 20; }
     """
 
@@ -844,10 +925,12 @@ class AddServerModal(ModalScreen):
     BINDINGS = [Binding("escape", "cancel", show=False)]
 
     DEFAULT_CSS = """
-    AddServerModal { align: center middle; background: $kit-overlay; }
+    AddServerModal { align: center middle; background: transparent; }
     AddServerModal #add-box {
         width: 58; height: auto;
-        background: $kit-modal-bg; border: round $kit-border-focus; padding: 1 3;
+        background: $kit-modal-bg 85%;
+        border: tall $kit-border-focus;
+        padding: 1 3;
     }
     AddServerModal #add-head { height: 1; margin-bottom: 1; }
     AddServerModal Input {
@@ -929,12 +1012,14 @@ class ServerSwitcherModal(ModalScreen):
     ]
 
     DEFAULT_CSS = """
-    ServerSwitcherModal { align: center middle; background: $kit-overlay; }
+    ServerSwitcherModal { align: center middle; background: transparent; }
     ServerSwitcherModal #srv-box {
         width: 54; height: auto; max-height: 80%;
-        background: $kit-modal-bg; border: round $kit-border-focus; padding: 1 2;
+        background: $kit-modal-bg 85%;
+        border: tall $kit-border-focus;
+        padding: 1 2;
     }
-    ServerSwitcherModal Static { background: $kit-modal-bg; }
+    ServerSwitcherModal Static { background: transparent; }
     ServerSwitcherModal #srv-list { height: auto; max-height: 18; }
     """
 
@@ -1066,12 +1151,14 @@ class PlaylistPickerModal(ModalScreen):
     ]
 
     DEFAULT_CSS = """
-    PlaylistPickerModal { align: center middle; background: $kit-overlay; }
+    PlaylistPickerModal { align: center middle; background: transparent; }
     PlaylistPickerModal #plp-box {
         width: 56; height: auto; max-height: 80%;
-        background: $kit-modal-bg; border: round $kit-border-focus; padding: 1 2;
+        background: $kit-modal-bg 85%;
+        border: tall $kit-border-focus;
+        padding: 1 2;
     }
-    PlaylistPickerModal Static { background: $kit-modal-bg; }
+    PlaylistPickerModal Static { background: transparent; }
     PlaylistPickerModal #plp-list { height: auto; max-height: 20; }
     """
 
@@ -1171,12 +1258,14 @@ class SettingsModal(ModalScreen):
     ]
 
     DEFAULT_CSS = """
-    SettingsModal { align: center middle; background: $kit-overlay; }
+    SettingsModal { align: center middle; background: transparent; }
     SettingsModal #set-box {
         width: 64; height: auto;
-        background: $kit-modal-bg; border: round $kit-border-focus; padding: 1 2;
+        background: $kit-modal-bg 85%;
+        border: tall $kit-border-focus;
+        padding: 1 2;
     }
-    SettingsModal Static { background: $kit-modal-bg; }
+    SettingsModal Static { background: transparent; }
     SettingsModal Input { background: transparent; border: round $kit-border; margin-bottom: 0; }
     SettingsModal Input:focus { border: round $kit-border-focus; }
     SettingsModal .set-label { height: 1; }

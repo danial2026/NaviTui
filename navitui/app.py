@@ -25,7 +25,7 @@ from textual.widgets import Footer, OptionList, Static
 from textual.widgets.option_list import Option
 
 from ricekit import KitApp, icons, palette
-from ricekit.modals import HelpModal, PickerModal
+from ricekit.modals import PickerModal
 from ricekit.storage import AppDirs
 from ricekit.widgets import NavList, Splitter
 
@@ -45,6 +45,7 @@ from navitui.screens import (
     EqualizerModal,
     InputModal,
     LyricsModal,
+    NaviTuiHelpModal,
     OnboardingScreen,
     PlaylistPickerModal,
     SearchModal,
