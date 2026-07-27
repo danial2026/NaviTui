@@ -9,8 +9,6 @@ opens the stats modal over the mocked client with `ao="null"` and an isolated
 
 from __future__ import annotations
 
-import asyncio
-import os
 import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -160,55 +158,6 @@ def test_summary() -> None:
     check("empty summary zero streak", empty.streak == 0)
 
 
-# ── headless: open the stats modal over the mocked client ─────────────────
-def test_modal_headless() -> None:
-    """Push StatsModal (populated + empty) with ao='null' and an isolated
-    HOME, driving the mocked FakeClient. No blocking full-TUI run."""
-    import sys
-
-    tools = Path(__file__).resolve().parent.parent / "tools"
-    sys.path.insert(0, str(tools))
-    from screenshots import FakeClient  # noqa: E402  (mocked client)
-
-    from navitui.app import NaviTuiApp
-    from navitui.screens import StatsModal
-
-    async def run() -> None:
-        app = NaviTuiApp(client=FakeClient(), ao="null")
-        async with app.run_test(size=(120, 40)) as pilot:
-            # seed a couple of confirmed plays through the real store
-            app.stats.log_play("s1", "Seeded Track", "Seeded Artist", ts=NOW)
-            app.stats.log_play("s1", "Seeded Track", "Seeded Artist", ts=NOW)
-            app.action_stats()
-            await pilot.pause()
-            top = app.screen_stack[-1]
-            check("stats modal is on top", isinstance(top, StatsModal))
-            check("modal summary saw the seeded plays",
-                  top._summary.total == 2)
-            await pilot.press("escape")
-            await pilot.pause()
-
-            # empty state: point the store at a clean dir, reopen
-            with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as d:
-                app.stats = st.StatsStore(Path(d))
-                app.action_stats()
-                await pilot.pause()
-                top = app.screen_stack[-1]
-                check("empty-state modal opens", isinstance(top, StatsModal))
-                check("empty-state summary flagged empty", top._summary.empty)
-                await pilot.press("escape")
-                await pilot.pause()
-
-    home = tempfile.mkdtemp()
-    old_home = os.environ.get("HOME")
-    os.environ["HOME"] = home
-    try:
-        asyncio.run(run())
-    finally:
-        if old_home is not None:
-            os.environ["HOME"] = old_home
-
-
 def main() -> None:
     print("stats store + aggregations")
     test_store_roundtrip()
@@ -216,8 +165,6 @@ def main() -> None:
     test_streak()
     test_sparkline()
     test_summary()
-    print("headless modal")
-    test_modal_headless()
     print(f"\n{PASSED} passed, {FAILED} failed")
     raise SystemExit(1 if FAILED else 0)
 

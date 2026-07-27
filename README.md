@@ -16,7 +16,15 @@ A fork of [Gheat1/NaviTui](https://github.com/Gheat1/NaviTui) — I added stuff 
 ## Install
 
 ```sh
-pip install "navitui[integrations] @ git+https://github.com/danial2026/NaviTui"
+cd ~/codes/NaviTui
+source .venv/bin/activate
+navitui
+```
+
+Add to your `~/.zshrc` or `~/.bashrc` for easier access:
+
+```sh
+alias navi="~/codes/NaviTui/.venv/bin/navitui"
 ```
 
 First launch asks for your server URL, username, and password.
