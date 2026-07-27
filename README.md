@@ -46,5 +46,6 @@ Press `?` for the full cheatsheet.
 
 ## Links
 
+- [Forked from Gheat1/NaviTui](https://github.com/Gheat1/NaviTui)
 - [ricekit](https://github.com/Gheat1/ricekit) — the design system
 - GPL-3.0-or-later
