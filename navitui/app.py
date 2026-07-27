@@ -313,20 +313,19 @@ class NaviTuiApp(KitApp):
         background: transparent;
     }
     .zen #art-panel {
-        width: 54%; height: 60%; max-width: 80;
-        border: none; content-align: center middle;
+        width: 44%; height: 45%; max-width: 64;
+        border: none;
     }
     .zen #zen-viz {
-        display: block; height: 1; margin: 0 0 1 0;
-        content-align: center middle;
+        display: block; height: 1; margin: 0 4 0 4;
     }
     .zen #zen-progress {
-        display: block; height: 1; width: 50%;
-        content-align: center middle;
+        display: block; height: 1; width: 70%;
+        margin: 1 0 0 0;
     }
     .zen #zen-info {
-        display: block; height: auto; width: 100%;
-        background: transparent; content-align: center middle;
+        display: block; height: auto;
+        background: transparent; margin: 0 2 0 2;
     }
     """
 
