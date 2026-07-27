@@ -312,16 +312,27 @@ class NaviTuiApp(KitApp):
     .zen #sidebar-panel, .zen #split1, .zen #tracks-panel,
     .zen #split2, .zen #queue-panel, .zen #topbar,
     .zen #now, .zen Footer { display: none; }
+    .zen #main { justify-content: center; }
+    .zen #side {
+        width: 1fr;
+        height: 1fr;
+        align: center middle;
+        content-align: center middle;
+        background: transparent;
+    }
     .zen #art-panel {
+        width: auto; height: auto;
         border: none;
         background: transparent;
         content-align: center middle;
     }
     .zen #zen-viz {
         display: block; height: 1; width: 100%;
+        content-align: center middle;
     }
     .zen #zen-progress {
         display: block; height: 1; width: 50%;
+        content-align: center middle;
     }
     .zen #zen-info {
         display: block; height: auto; width: 100%;
@@ -3128,28 +3139,9 @@ class NaviTuiApp(KitApp):
     def action_toggle_zen(self) -> None:
         self._zen = not self._zen
         self.set_class(self._zen, "zen")
-        side = self.query_one("#side")
-        art = self.query_one("#art-panel", CoverArt)
         if self._zen:
-            side.styles.width = "1fr"
-            side.styles.height = "1fr"
-            side.styles.align = ("center", "middle")
-            art.styles.width = 48
-            art.styles.height = 24
-            art.styles.min_width = 48
-            art.styles.min_height = 24
-            art.styles.max_width = 48
-            art.styles.max_height = 24
             self._render_zen_info()
         else:
-            side.styles.width = 34
-            side.styles.height = "1fr"
-            art.styles.width = "auto"
-            art.styles.height = "40%"
-            art.styles.min_width = None
-            art.styles.min_height = 10
-            art.styles.max_width = None
-            art.styles.max_height = None
             self.query_one("#tracks-list", ClickList).focus()
 
     def _render_zen_info(self) -> None:
