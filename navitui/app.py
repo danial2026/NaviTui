@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import asyncio
 import random
-import textwrap
 import time
 
 from rich.text import Text
@@ -597,14 +596,6 @@ class NaviTuiApp(KitApp):
         target = not self._jukebox
         self.dirs.save_state({"jukebox": target})
         self._switch_player(jukebox=target)
-
-    # ── settings: effective values (runtime state overlaid on config) ─────
-    def _setting(self, key: str):
-        """Effective value for a settings key: the last runtime value saved in
-        app state, else the config default. Lets the in-app Settings screen and
-        the equalizer overlay persist without touching player.toml."""
-        st = self.dirs.load_state()
-        return st[key] if key in st else CONFIG.get(key)
 
     def _eq_state(self) -> dict:
         st = self.dirs.load_state().get("equalizer")
