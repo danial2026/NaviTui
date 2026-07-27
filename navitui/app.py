@@ -144,7 +144,7 @@ HELP_SECTIONS = [
         [
             ("N", "toggle notifications"),
             ("J", "jukebox (play on server)"),
-            ("", "media keys via MPRIS (linux)"),
+            ("", "media keys via MPRIS / macOS / Windows"),
             ("", "config: player.toml — keybinds,"),
             ("", "replaygain, gapless, bitrate…"),
         ],

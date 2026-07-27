@@ -70,7 +70,6 @@ KEYBINDS = {
     "equalizer":           "ctrl+e",
     "audio_device":        "ctrl+o",
     "server_switch":       "ctrl+g",
-    "pin_toggle":          "ctrl+f",
     "private_mode":        "ctrl+y",
     "command_palette":     "ctrl+p",
     "help":                "question_mark",

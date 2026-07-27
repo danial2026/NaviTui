@@ -513,13 +513,3 @@ class SubsonicClient:
             except ValueError:
                 pass
         return resp
-
-    def remove_pin(self, song_id: str) -> bool:
-        """Drop a pinned file (used by eviction / a future downloads panel).
-        Returns True if something was removed."""
-        path = self._audio_path(song_id)
-        try:
-            path.unlink()
-            return True
-        except OSError:
-            return False
