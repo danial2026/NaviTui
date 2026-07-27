@@ -290,10 +290,9 @@ class NaviTuiApp(KitApp):
     #sidebar-panel { width: 26; }
     #tracks-panel { width: 1fr; }
     #pl-header { display: none; height: auto; padding: 0 1 1 1; }
-    #pl-art { height: 5; width: 5; border: none; background: transparent; align: center middle; }
-    #pl-art > .cover-image { width: auto; height: auto; }
-    #pl-art > #cover-placeholder { width: 100%; height: 100%; content-align: center middle; }
-    #pl-info { height: auto; width: 1fr; padding: 0 1; }
+    #pl-art { height: 4; width: 4; border: none; background: transparent; align: center middle; }
+    #pl-art > .cover-image { max-width: 100%; max-height: 100%; }
+    #pl-info { height: auto; width: 1fr; padding: 0 1; content-align: left middle; }
     #side { width: 34; }
     #art-panel {
         height: 40%; min-height: 10;
