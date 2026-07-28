@@ -31,7 +31,7 @@ _TRASH = "\uf1f8"     # nf-fa-trash
 _RADIO = "\uf519"     # nf-fa-broadcast_tower
 _STAR = "\uf005"      # nf-fa-star
 _LIST = "\uf03a"      # nf-fa-list
-_MUSIC = "\uf001"     # nf-fa-music
+
 _LINK = "\uf0c1"      # nf-fa-link
 _CAMERA = "\uf030"    # nf-fa-camera
 _DOWNLOAD = "\uf019"  # nf-fa-download
@@ -63,7 +63,7 @@ COMMANDS: list[tuple[str, str, str]] = [
     (f"{_RADIO} toggle radio", "toggle_radio", "autoplay similar tracks when the queue drains"),
     (f"{_STAR} star / unstar", "star", "star or unstar the highlighted track"),
     (f"{_LIST} add to playlist", "playlist_add", "add the highlighted track to a playlist"),
-    (f"{_MUSIC} lyrics", "lyrics", "show lyrics for the current track"),
+
     (f"{_LINK} copy share link", "share", "create and copy a share link"),
     (f"{_CAMERA} export card", "export_card", "save the now-playing state as an SVG card"),
     (f"{_DOWNLOAD} download track", "download", "pin the highlighted track for offline"),

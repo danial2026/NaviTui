@@ -51,7 +51,7 @@ KEYBINDS = {
     "playlist_rename":     "ctrl+r",
     "playlist_delete":     "ctrl+x",
     "queue_save":          "ctrl+s",
-    "lyrics":              "L",
+
     "stats":               "ctrl+w",
     "share":               "S",
     "export_card":         "C",

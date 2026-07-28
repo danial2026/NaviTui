@@ -931,10 +931,6 @@ class NaviTuiApp(KitApp):
                 else:
                     now.sleep_label = anim.fmt_time(remaining)
             now.tick(level)
-            # drive the synced-lyrics highlight off this one heartbeat
-            top = self.screen_stack[-1] if len(self.screen_stack) > 1 else None
-            if isinstance(top, LyricsModal) and self.player is not None:
-                top.tick(self.player.position)
             if self._zen:
                 self._render_zen_info()  # follow track changes in the splash
             groups = {w.group for w in self.workers if not w.is_finished}
@@ -2263,7 +2259,7 @@ class NaviTuiApp(KitApp):
         self.notify(f"saved “{name}” · {len(song_ids)} tracks", timeout=3)
         self._load_playlists()
 
-    # ── track extras: rating, lyrics, share, go-to ────────────────────
+    # ── track extras: rating, share, go-to ────────────────────────────
     def _target_song(self) -> Song | None:
         """The song an action applies to: the highlighted one if a list is
         focused, else whatever is playing."""
@@ -2296,36 +2292,6 @@ class NaviTuiApp(KitApp):
                 self.notify(f"couldn't set rating: {e}", severity="warning")
         finally:
             self._mutations -= 1
-
-    def action_lyrics(self) -> None:
-        song = self._target_song()
-        if song is None:
-            self.notify("nothing to look up", timeout=2)
-            return
-        self._fetch_lyrics(song)
-
-    @work(exclusive=True, group="lyrics")
-    async def _fetch_lyrics(self, song: Song) -> None:
-        # prefer timed (synced) lyrics; fall back to the plain getLyrics path
-        synced = None
-        get_synced = getattr(self.client, "get_synced_lyrics", None)
-        if get_synced is not None:
-            try:
-                synced = await get_synced(song.id)
-            except Exception:
-                synced = None
-        text = ""
-        if not synced:
-            try:
-                text = await self.client.get_lyrics(song.artist, song.title)
-            except Exception:
-                text = ""
-        if not synced and not text.strip():
-            self.notify(f"no lyrics found for {song.title}", timeout=3)
-            return
-        self.push_screen(
-            LyricsModal(f"{song.title} — {song.artist}", text, synced=synced)
-        )
 
     def action_share(self) -> None:
         song = self._target_song()
@@ -2878,8 +2844,7 @@ class NaviTuiApp(KitApp):
             self.query_one("#tracks-list", ClickList).focus()
 
     def _render_zen_info(self) -> None:
-        """The big title/artist/album block under the cover in zen mode, plus a
-        scrolling window of synced lyrics when the song has them."""
+        """The big title/artist/album block under the cover in zen mode."""
         song = self.queue.current
         info = self.query_one("#zen-info", Static)
         viz = self.query_one("#zen-viz", Static)
@@ -2914,59 +2879,7 @@ class NaviTuiApp(KitApp):
         vx = Text(justify="center")
         vx.append_text(v.viz.render())
         viz.update(vx)
-
-        # fetch this song's timed lyrics once (the heartbeat calls us again as
-        # the fetch lands and as the position advances the highlighted line)
-        if self._zen_lyrics_for != song.id:
-            self._zen_lyrics_for = song.id
-            self._zen_lyrics = None
-            self._fetch_zen_lyrics(song)
-        window = self._zen_lyric_window()
-        if window is not None:
-            t.append("\n\n")
-            t.append_text(window)
         info.update(t)
-
-    @work(exclusive=True, group="zen-lyrics")
-    async def _fetch_zen_lyrics(self, song: Song) -> None:
-        get_synced = getattr(self.client, "get_synced_lyrics", None)
-        if get_synced is None:
-            return
-        try:
-            synced = await get_synced(song.id)
-        except Exception:
-            synced = None
-        # only apply if we're still in zen and on the same song
-        if self._zen and self.queue.current is not None and self.queue.current.id == song.id:
-            self._zen_lyrics = synced
-
-    def _zen_lyric_window(self, radius: int = 4) -> Text | None:
-        """A centred window of synced lyrics around the current line, or None
-        when the song has no timed lyrics."""
-        synced = self._zen_lyrics
-        if not synced:
-            return None
-        position = self.player.position if self.player else 0.0
-        current = -1
-        for i, (start, _) in enumerate(synced):
-            if start <= position:
-                current = i
-            else:
-                break
-        out = Text(justify="center")
-        anchor = current if current >= 0 else 0
-        lo = max(0, anchor - radius)
-        hi = min(len(synced), anchor + radius + 1)
-        for i in range(lo, hi):
-            line = synced[i][1] or " "
-            if i == current:
-                style = f"bold {palette.text}"
-                out.append(f"  {line}  \n", style=style)
-            elif abs(i - current) == 1:
-                out.append(f"{line}\n", style=palette.sub)
-            else:
-                out.append(f"{line}\n", style=palette.dim)
-        return out
 
     def on_kit_theme_changed(self) -> None:
         if not self.kit_theme_previewing:
