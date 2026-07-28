@@ -971,6 +971,11 @@ class NaviTuiApp(KitApp):
         if self.view == view_id:
             self._show_songs(songs, title)
 
+    def _show_songs(self, songs: list[Song], title: str) -> None:
+        self._songs = songs
+        self.query_one("#tracks-panel").border_title = title
+        self._fill("#tracks-list", [self._song_row(s, i) for i, s in enumerate(songs)])
+
     def _tracks_title(self, view_id: str) -> str:
         if view_id.startswith("pl:"):
             pid = view_id.split(":", 1)[1]
