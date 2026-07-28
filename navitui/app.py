@@ -957,39 +957,39 @@ class NaviTuiApp(KitApp):
         for view_id, label in VIEWS:
             row = Text(no_wrap=True, overflow="ellipsis")
             if view_id == "starred":
-                row.append(f" {icons.STAR}", style=palette.text)
+                row.append(f" {icons.STAR}", style=palette.sub)
             elif view_id == "shuffle-all":
-                row.append(" \uf074", style=palette.text)  # nf-fa-random
+                row.append(" \uf074", style=palette.sub)  # nf-fa-random
             elif view_id == "newest":
-                row.append(f" {icons.CLOCK}", style=palette.text)
+                row.append(f" {icons.CLOCK}", style=palette.sub)
             elif view_id == "recent":
-                row.append(f" {icons.CALENDAR}", style=palette.text)
+                row.append(f" {icons.CALENDAR}", style=palette.sub)
             elif view_id == "frequent":
-                row.append(f" {icons.REFRESH}", style=palette.text)
+                row.append(f" {icons.REFRESH}", style=palette.sub)
             else:
-                row.append(f" {icons.LIST}", style=palette.text)
+                row.append(f" {icons.LIST}", style=palette.sub)
             row.append(f" {label}", style=palette.text)
             options.append(Option(row, id=view_id))
         for p in self._playlists:
             row = Text(no_wrap=True, overflow="ellipsis")
-            row.append(f" {icons.LIST}", style=palette.text)
+            row.append(f" {icons.LIST}", style=palette.sub)
             row.append(f" {p.name}", style=palette.text)
             row.append(f" {p.song_count}\u2669", style=palette.vfaint)
             options.append(Option(row, id=f"pl:{p.id}"))
         new_row = Text(no_wrap=True)
-        new_row.append(f" {icons.PLUS}", style=palette.text)
+        new_row.append(f" {icons.PLUS}", style=palette.sub)
         new_row.append(" new playlist", style=palette.sub)
         options.append(Option(new_row, id="pl-new"))
         if self._podcasts:
             for channel, episodes in self._podcasts:
                 row = Text(no_wrap=True, overflow="ellipsis")
-                row.append(" \uf2ce", style=palette.text)  # nf-fa-podcast
+                row.append(" \uf2ce", style=palette.sub)  # nf-fa-podcast
                 row.append(f" {channel.title}", style=palette.text)
                 row.append(f" {len(episodes)}", style=palette.vfaint)
                 options.append(Option(row, id=f"podcast:{channel.id}"))
         if self._stations:
             row = Text(no_wrap=True, overflow="ellipsis")
-            row.append(" \uf519", style=palette.text)  # nf-fa-broadcast_tower
+            row.append(" \uf519", style=palette.sub)  # nf-fa-broadcast_tower
             row.append(" stations", style=palette.text)
             row.append(f" {len(self._stations)}", style=palette.vfaint)
             options.append(Option(row, id="radio"))

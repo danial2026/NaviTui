@@ -6,8 +6,8 @@ callbacks on its own event thread, so the app schedules UI work with
 `loop.call_soon_threadsafe` (never a blocking call — that deadlocks against
 `terminate()`); this module never touches the UI.
 
-If libmpv isn't installed the app still runs (browse, search, queue); it
-just tells you how to get sound on your OS.
+If libmpv isn't installed the app still runs (browse, queue, remote
+control); it just tells you how to get sound on your OS.
 """
 
 from __future__ import annotations

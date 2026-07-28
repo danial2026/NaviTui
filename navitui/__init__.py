@@ -6,7 +6,7 @@ kitty/sixel graphics protocols with a unicode fallback.
 
 from __future__ import annotations
 
-__version__ = "0.6.0"
+__version__ = "0.6.1"
 
 # Run terminal-protocol detection before anything imports navitui.art (which
 # pulls in textual_image). This forces the kitty graphics protocol on

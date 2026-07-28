@@ -1,8 +1,8 @@
 """Album-art-derived live theming — tint the chrome with the cover's color.
 
 When the current song's art loads we pull one vibrant color out of it and
-nudge the kit's accent roles (`blue`/`lav`/`mauve`) toward it, so borders,
-the progress bar and the now-playing line quietly take on the album's hue.
+nudge accent roles (`blue`/`lav`/`mauve`) toward it, so borders, the
+progress bar, sidebar icons and text quietly take on the album's hue.
 The tint is a thin layer over `ricekit.palette`: roles are still read at
 render time, so a theme switch (which rebuilds the palette) wins — the app
 just re-applies whatever tint is active afterwards.
@@ -28,8 +28,9 @@ from navitui import anim
 
 # roles nudged toward the album color, and how far (0..1) each moves. The
 # progress bar reads blue+lav; borders/markers read blue; accents read mauve.
+# `sub` tints sidebar icons (keeps them distinct from body text).
 # `faint` governs the resting $kit-border (subtler shift — 0.3 keeps it muted).
-_TINTED_ROLES = {"blue": 0.55, "lav": 0.5, "mauve": 0.45, "faint": 0.3}
+_TINTED_ROLES = {"blue": 0.55, "lav": 0.5, "mauve": 0.45, "sub": 0.25, "faint": 0.3}
 
 # the currently-applied tint (a hex string) and the untinted base colors we
 # blended away from, so a re-apply after a theme swap starts from clean roles.
