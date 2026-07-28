@@ -43,7 +43,7 @@ KEYBINDS = {
     "download_all":        "ctrl+d",
     "offline_toggle":      "O",
     "quality_cycle":       "Q",
-    "jukebox_toggle":      "J",
+
     "playlist_add":        "p",
     "playlist_remove":     "P",
     "playlist_move_up":    "shift+up",
@@ -89,7 +89,7 @@ DEFAULTS = {
     "listenbrainz_token": "",     # listenbrainz.org/profile — scrobble to ListenBrainz
     "remote_control": True,       # local control API (unix socket) for the CLI
     "remote_token": "",           # optional shared secret; required on the TCP fallback
-    "jukebox": False,             # play on the SERVER's audio out, not this machine
+
     "replaygain_preamp": 0.0,     # dB, applied on top of ReplayGain gain
     "replaygain_fallback": 0.0,   # dB, substitute gain for tracks with no RG tags (-6 tames untagged tracks)
     "audio_exclusive": False,     # take exclusive/direct control of the output device
@@ -150,11 +150,6 @@ _TEMPLATE = """\
 #remote_control = true
 #remote_token = ""
 
-# Jukebox mode: play through the SERVER's own audio output (for a headless
-# Navidrome box wired to speakers) instead of decoding locally. Needs the
-# "jukebox" role on your account; falls back to local playback if the server
-# refuses. Toggle at runtime with J.
-#jukebox = false
 
 # ReplayGain fine-tuning (in dB). preamp is applied on top of the ReplayGain
 # gain; fallback is the gain substituted for tracks that carry no RG tags.
