@@ -32,11 +32,11 @@ Press `?` for the full cheatsheet.
 | --- | --- | --- | --- |
 | `space` | play/pause | `s` | shuffle |
 | `n`/`b` | next/prev | `r` | repeat |
-| `←`/`→` | seek 5s | `m` | mute |
-| `-`/`+` | volume | `z` | zen mode |
-| `/` | search | `ctrl+g` | switch server |
-| `a` | enqueue | `f` | star |
-| `d` | download | `L` | lyrics |
+| `←`/`→` | seek 5s / 30s | `m` | mute |
+| `-`/`+` | volume | `>` / `<` | speed / sleep |
+| `\` | filter tracks | `z` | zen mode |
+| `a` / `A` | enqueue / play next | `f` | star |
+| `d` / `D` | download / download view | `x` / `X` | queue remove / clear |
 | `q` | quit | `?` | help |
 
 ## Links
