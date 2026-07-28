@@ -2795,55 +2795,29 @@ class NaviTuiApp(KitApp):
             el.mount(Static("♪", id="pl-placeholder"))
         self.app.call_next(do)
 
+    def _sync_border_tint(self):
+        from ricekit.palette import palette
+
+        self.theme_variables["kit-border"] = palette.faint
+        self.theme_variables["kit-border-focus"] = palette.blue
+        self.theme_variables["kit-border-alt"] = palette.lav
+        self.stylesheet.set_variables(self.theme_variables)
+        self.stylesheet.reparse()
+        self.stylesheet.update(self.screen, animate=False)
+
     def _tint_from_art(self, path: Path | None) -> None:
         """Live-tint the chrome with the cover's dominant color (or clear
         it). Off unless enabled + truecolor; any failure leaves it untinted."""
         if not CONFIG["art_theming"] or path is None:
             artcolor.set_tint(None)
+            self.refresh_css()
             return
         try:
             artcolor.set_tint(artcolor.extract_vibrant(path))
+            self._sync_border_tint()
         except Exception:
             artcolor.set_tint(None)
-
-    # ── search ────────────────────────────────────────────────────────
-    def action_search(self) -> None:
-        if self.client is None:
-            return
-        self.push_screen(SearchModal(), self._search_done)
-
-    def _search_done(self, result) -> None:
-        if not result:
-            return
-        kind = result[0]
-        if kind == "song":
-            _, songs, index = result
-            self._play_songs(songs, index)
-        elif kind == "song-queue":
-            _, song, play_next = result
-            if play_next:
-                self.queue.add_next([song])
-            else:
-                self.queue.add([song])
-            self._render_queue()
-            self._persist_queue()
-            self.notify(f"queued {'next: ' if play_next else ''}{song.title}", timeout=2)
-        elif kind == "album":
-            self._enqueue_album(result[1])
-        elif kind == "artist":
-            self._load_artist_songs(result[1])
-
-    @work(group="mutate")
-    async def _enqueue_album(self, album: Album) -> None:
-        try:
-            songs = await self.client.get_album_songs(album.id)
-        except Exception as e:
-            self._connection_trouble(e)
-            return
-        self.queue.add(songs)
-        self._render_queue()
-        self._persist_queue()
-        self.notify(f"queued album: {album.name}", timeout=3)
+            self.refresh_css()
 
     # ── misc actions ──────────────────────────────────────────────────
     def action_focus_panel(self, direction: int) -> None:
@@ -3000,6 +2974,7 @@ class NaviTuiApp(KitApp):
         # the palette was just rebuilt for the new theme — re-assert the
         # album tint on top (a no-op under the ANSI `system` theme)
         artcolor.reapply()
+        self._sync_border_tint()
         self._render_status()
         if self.client is not None:
             self._render_sidebar()

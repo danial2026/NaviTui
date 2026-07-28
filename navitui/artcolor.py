@@ -28,7 +28,8 @@ from navitui import anim
 
 # roles nudged toward the album color, and how far (0..1) each moves. The
 # progress bar reads blue+lav; borders/markers read blue; accents read mauve.
-_TINTED_ROLES = {"blue": 0.55, "lav": 0.5, "mauve": 0.45}
+# `faint` governs the resting $kit-border (subtler shift — 0.3 keeps it muted).
+_TINTED_ROLES = {"blue": 0.55, "lav": 0.5, "mauve": 0.45, "faint": 0.3}
 
 # the currently-applied tint (a hex string) and the untinted base colors we
 # blended away from, so a re-apply after a theme swap starts from clean roles.

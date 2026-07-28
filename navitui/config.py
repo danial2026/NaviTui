@@ -15,7 +15,7 @@ KEYBINDS = {
     "play_pause":          "space",
     "next_track":          "n",
     "prev_track":          "b",
-    "search":              "slash",
+
     "shuffle":             "s",
     "repeat":              "r",
     "filter":              "backslash",

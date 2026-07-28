@@ -21,7 +21,7 @@ from textual.command import DiscoveryHit, Hit, Hits, Provider
 _PLAY = "\uf04b"      # nf-fa-play
 _NEXT = "\uf051"      # nf-fa-step_forward
 _PREV = "\uf048"      # nf-fa-step_backward
-_SEARCH = "\uf002"    # nf-fa-search
+
 _SHUFFLE = "\uf074"   # nf-fa-random
 _REPEAT = "\uf01e"    # nf-fa-repeat
 _FILTER = "\uf0b0"    # nf-fa-filter
@@ -51,7 +51,7 @@ COMMANDS: list[tuple[str, str, str]] = [
     (f"{_PLAY} play / pause", "play_pause", "toggle playback"),
     (f"{_NEXT} next track", "next_track", "skip to the next track"),
     (f"{_PREV} previous track", "prev_track", "back / restart the track"),
-    (f"{_SEARCH} search", "search", "search songs, albums, artists"),
+
     (f"{_SHUFFLE} shuffle", "toggle_shuffle", "toggle shuffle"),
     (f"{_REPEAT} repeat", "cycle_repeat", "cycle repeat: off -> all -> one"),
     (f"{_FILTER} filter tracks", "filter", "narrow the tracks pane as you type"),
