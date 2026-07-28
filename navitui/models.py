@@ -8,6 +8,7 @@ the next launch.
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+from typing import Any
 
 
 @dataclass
@@ -145,116 +146,6 @@ class Playlist:
     def from_dict(cls, d: dict) -> "Playlist":
         return cls(**d)
 
-
-@dataclass
-class Genre:
-    name: str
-    song_count: int = 0
-    album_count: int = 0
-
-    @classmethod
-    def from_api(cls, d: dict) -> "Genre":
-        # getGenres returns the name in "value"; browse filters use it verbatim
-        return cls(
-            name=d.get("value") or d.get("name") or "?",
-            song_count=int(d.get("songCount", 0) or 0),
-            album_count=int(d.get("albumCount", 0) or 0),
-        )
-
-    def to_dict(self) -> dict:
-        return asdict(self)
-
-    @classmethod
-    def from_dict(cls, d: dict) -> "Genre":
-        return cls(**d)
-
-
-@dataclass
-class Bookmark:
-    """A saved resume point in a track — the Song plus a position in ms and
-    an optional comment. Round-trips through the cache like everything else."""
-
-    song: Song
-    position_ms: int = 0
-    comment: str = ""
-
-    @classmethod
-    def from_api(cls, d: dict) -> "Bookmark":
-        return cls(
-            song=Song.from_api(d.get("entry", {})),
-            position_ms=int(d.get("position", 0) or 0),
-            comment=d.get("comment", "") or "",
-        )
-
-    def to_dict(self) -> dict:
-        return {
-            "song": self.song.to_dict(),
-            "position_ms": self.position_ms,
-            "comment": self.comment,
-        }
-
-    @classmethod
-    def from_dict(cls, d: dict) -> "Bookmark":
-        return cls(
-            song=Song.from_dict(d["song"]),
-            position_ms=int(d.get("position_ms", 0) or 0),
-            comment=d.get("comment", "") or "",
-        )
-
-
-@dataclass
-class PodcastChannel:
-    """A subscribed podcast feed. Episodes are `Song`s (see
-    `SubsonicClient.get_podcasts`) so they flow through the tracks pane and
-    queue unchanged."""
-
-    id: str
-    title: str
-    cover_art: str | None = None
-    episode_count: int = 0
-
-    @classmethod
-    def from_api(cls, d: dict) -> "PodcastChannel":
-        return cls(
-            id=str(d["id"]),
-            title=d.get("title") or d.get("url") or "?",
-            cover_art=d.get("coverArt"),
-            episode_count=len(d.get("episode", []) or []),
-        )
-
-    def to_dict(self) -> dict:
-        return asdict(self)
-
-    @classmethod
-    def from_dict(cls, d: dict) -> "PodcastChannel":
-        return cls(**d)
-
-
-@dataclass
-class RadioStation:
-    """An internet-radio station: a name and a direct stream URL that mpv
-    opens without the Subsonic stream endpoint."""
-
-    id: str
-    name: str
-    stream_url: str
-    home_url: str = ""
-
-    @classmethod
-    def from_api(cls, d: dict) -> "RadioStation":
-        return cls(
-            id=str(d["id"]),
-            name=d.get("name", "?"),
-            stream_url=d.get("streamUrl", ""),
-            home_url=d.get("homePageUrl", "") or d.get("homepageUrl", ""),
-        )
-
-    def to_dict(self) -> dict:
-        return asdict(self)
-
-    @classmethod
-    def from_dict(cls, d: dict) -> "RadioStation":
-        return cls(**d)
 
 
 

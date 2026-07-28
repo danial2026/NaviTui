@@ -58,14 +58,6 @@ class MutationQueue:
         self._ops.append({"op": "star", "item_id": item_id, "kind": kind, "star": bool(star)})
         self._persist()
 
-    def rate(self, song_id: str, rating: int) -> None:
-        self._ops = [
-            op for op in self._ops
-            if not (op["op"] == "rate" and op["song_id"] == song_id)
-        ]
-        self._ops.append({"op": "rate", "song_id": song_id, "rating": int(rating)})
-        self._persist()
-
     def scrobble(self, song_id: str, submission: bool) -> None:
         # a scrobble is a play event, not a set-operation: only fold an exact
         # duplicate (same song, same submission flag) that hasn't flushed yet
@@ -104,8 +96,6 @@ def _valid(op: dict) -> bool:
     kind = op.get("op")
     if kind == "star":
         return {"item_id", "kind", "star"} <= op.keys()
-    if kind == "rate":
-        return {"song_id", "rating"} <= op.keys()
     if kind == "scrobble":
         return {"song_id", "submission"} <= op.keys()
     return False
@@ -115,7 +105,5 @@ async def _apply(client, op: dict) -> None:
     kind = op["op"]
     if kind == "star":
         await client.set_star(op["item_id"], op["kind"], op["star"])
-    elif kind == "rate":
-        await client.set_rating(op["song_id"], op["rating"])
     elif kind == "scrobble":
         await client.scrobble(op["song_id"], op["submission"])

@@ -35,42 +35,24 @@ KEYBINDS = {
     "queue_move_up":       "ctrl+up",
     "queue_move_down":     "ctrl+down",
     "star":                "f",
-    "select_mode":         "v",
-    "start_radio":         "i",
-    "radio_toggle":        "I",
     "download":            "d",
     "download_view":       "D",
     "download_all":        "ctrl+d",
     "offline_toggle":      "O",
     "quality_cycle":       "Q",
 
-    "playlist_add":        "p",
-    "playlist_remove":     "P",
-    "playlist_move_up":    "shift+up",
-    "playlist_move_down":  "shift+down",
-    "playlist_rename":     "ctrl+r",
-    "playlist_delete":     "ctrl+x",
     "queue_save":          "ctrl+s",
 
     "stats":               "ctrl+w",
-    "share":               "S",
-    "export_card":         "C",
-    "go_album":            "e",
-    "go_artist":           "E",
-    "genres":              "y",
-    "bookmark":            "w",
-    "bookmarks":           "W",
     "notifications":       "N",
     "panel_prev":          "h",
     "panel_next":          "l",
-    "refresh":             "R",
     "theme_cycle":         "t",
     "theme_pick":          "T",
     "zen":                 "z",
     "equalizer":           "ctrl+e",
     "audio_device":        "ctrl+o",
     "server_switch":       "ctrl+g",
-    "private_mode":        "ctrl+y",
     "command_palette":     "ctrl+p",
     "help":                "question_mark",
     "quit":                "q",
@@ -125,10 +107,6 @@ _TEMPLATE = """\
 
 # Desktop notification on track change (toggle at runtime with N)
 #notifications = true
-
-# Endless radio: when the queue drains, autoplay similar tracks forever.
-# Toggle at runtime with I; start a station from a track with i. Persisted
-# in app state, not here — this note is just a pointer to the keybinds.
 
 # Tint the UI with a color pulled from the current song's cover art.
 # Truecolor terminals only; the "system" (ANSI) theme leaves this inert.

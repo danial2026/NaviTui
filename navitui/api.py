@@ -23,11 +23,7 @@ import httpx
 from navitui.models import (
     Album,
     Artist,
-    Bookmark,
-    Genre,
     Playlist,
-    PodcastChannel,
-    RadioStation,
     Song,
 )
 
@@ -142,38 +138,6 @@ class SubsonicClient:
         body = await self._get("getPlaylists")
         return [Playlist.from_api(p) for p in body.get("playlists", {}).get("playlist", [])]
 
-    async def create_playlist(self, name: str, song_ids: list[str]) -> None:
-        await self._get("createPlaylist", name=name, songId=song_ids)
-
-    async def add_to_playlist(self, playlist_id: str, song_ids: list[str]) -> None:
-        await self._get("updatePlaylist", playlistId=playlist_id, songIdToAdd=song_ids)
-
-    async def remove_from_playlist(self, playlist_id: str, indices: list[int]) -> None:
-        """Drop entries by their zero-based position (updatePlaylist's
-        songIndexToRemove — indices into the playlist as it stands server-side)."""
-        await self._get("updatePlaylist", playlistId=playlist_id, songIndexToRemove=indices)
-
-    async def rename_playlist(self, playlist_id: str, name: str) -> None:
-        await self._get("updatePlaylist", playlistId=playlist_id, name=name)
-
-    async def delete_playlist(self, playlist_id: str) -> None:
-        await self._get("deletePlaylist", id=playlist_id)
-
-    async def reorder_playlist(self, playlist_id: str, song_ids: list[str]) -> None:
-        """Persist an arbitrary new song order. Subsonic's updatePlaylist has no
-        move/reorder verb, so we rebuild the entry list in one call: clear every
-        current entry (songIndexToRemove for 0..n-1) and re-add the ids in the
-        desired order (songIdToAdd), both in the same request. Sending them
-        together is atomic server-side — removes apply first, then the adds — so
-        the playlist never briefly empties and metadata (name/owner) is kept."""
-        remove = list(range(len(song_ids)))
-        await self._get(
-            "updatePlaylist",
-            playlistId=playlist_id,
-            songIndexToRemove=remove,
-            songIdToAdd=song_ids,
-        )
-
     async def get_playlist_songs(self, playlist_id: str) -> list[Song]:
         body = await self._get("getPlaylist", id=playlist_id)
         return [Song.from_api(s) for s in body.get("playlist", {}).get("entry", [])]
@@ -183,56 +147,9 @@ class SubsonicClient:
         starred = body.get("starred2", {})
         return [Song.from_api(s) for s in starred.get("song", [])]
 
-    async def get_genres(self) -> list[Genre]:
-        """All genres in the library (`getGenres`), most-populated first so the
-        picker leads with the genres worth browsing."""
-        body = await self._get("getGenres")
-        genres = [Genre.from_api(g) for g in body.get("genres", {}).get("genre", [])]
-        genres.sort(key=lambda g: g.song_count, reverse=True)
-        return genres
-
-    async def get_songs_by_genre(self, genre: str, count: int = 500) -> list[Song]:
-        """Songs tagged with `genre` (`getSongsByGenre`)."""
-        body = await self._get("getSongsByGenre", genre=genre, count=count)
-        return [Song.from_api(s) for s in body.get("songsByGenre", {}).get("song", [])]
-
-    async def get_bookmarks(self) -> list[Bookmark]:
-        """Saved resume points across long tracks / audiobooks
-        (`getBookmarks`)."""
-        body = await self._get("getBookmarks")
-        return [Bookmark.from_api(b) for b in body.get("bookmarks", {}).get("bookmark", [])]
-
-    async def create_bookmark(self, song_id: str, position_ms: int, comment: str | None = None) -> None:
-        """Save/replace a resume point at `position_ms` for a song
-        (`createBookmark`)."""
-        await self._get("createBookmark", id=song_id, position=int(position_ms), comment=comment)
-
-    async def delete_bookmark(self, song_id: str) -> None:
-        await self._get("deleteBookmark", id=song_id)
-
     async def get_random_songs(self, size: int = 50) -> list[Song]:
         body = await self._get("getRandomSongs", size=size)
         return [Song.from_api(s) for s in body.get("randomSongs", {}).get("song", [])]
-
-    async def get_similar_songs(self, item_id: str, count: int = 20) -> list[Song]:
-        """Songs similar to a song/artist id (the seed for endless radio).
-        Prefers OpenSubsonic's `getSimilarSongs2`, falling back to the older
-        `getSimilarSongs` — servers without either just return an empty list."""
-        for endpoint, key in (("getSimilarSongs2", "similarSongs2"), ("getSimilarSongs", "similarSongs")):
-            try:
-                body = await self._get(endpoint, id=item_id, count=count)
-            except SubsonicError:
-                continue
-            songs = [Song.from_api(s) for s in body.get(key, {}).get("song", [])]
-            if songs:
-                return songs
-        return []
-
-    async def get_top_songs(self, artist: str, count: int = 20) -> list[Song]:
-        """An artist's top tracks by name (`getTopSongs`) — a decent radio
-        seed when similar-songs comes back empty."""
-        body = await self._get("getTopSongs", artist=artist, count=count)
-        return [Song.from_api(s) for s in body.get("topSongs", {}).get("song", [])]
 
     async def get_songs_by_albums(self, list_type: str, albums: int = 15) -> list[Song]:
         """Songs-first view of an album list: flatten the songs of the top N
@@ -268,64 +185,6 @@ class SubsonicClient:
                 break
         return songs[:max_songs]
 
-    # ── podcasts & internet radio ─────────────────────────────────────
-    @staticmethod
-    def _episode_song(ep: dict, channel_title: str) -> Song | None:
-        """A podcast episode as a playable Song. `streamId` is the id the
-        `stream`/`download` endpoints accept, so we key the Song on it and
-        everything (playback, offline pins) works unchanged. Episodes still
-        downloading / errored have no streamId — those are dropped."""
-        stream_id = ep.get("streamId")
-        if not stream_id:
-            return None
-        return Song(
-            id=str(stream_id),
-            title=ep.get("title", "?"),
-            artist=channel_title,  # the channel reads as the "artist"
-            album=channel_title,
-            year=ep.get("year"),
-            duration=int(ep.get("duration", 0) or 0),
-            cover_art=ep.get("coverArt"),
-            suffix=ep.get("suffix", ""),
-            bit_rate=ep.get("bitRate"),
-        )
-
-    async def get_podcasts(self) -> list[tuple[PodcastChannel, list[Song]]]:
-        """Every subscribed channel with its episodes flattened into playable
-        Songs (`getPodcasts` with `includeEpisodes`). Newest episode first."""
-        body = await self._get("getPodcasts", includeEpisodes="true")
-        out: list[tuple[PodcastChannel, list[Song]]] = []
-        for ch in body.get("podcasts", {}).get("channel", []):
-            channel = PodcastChannel.from_api(ch)
-            episodes = [
-                s for ep in ch.get("episode", [])
-                if (s := self._episode_song(ep, channel.title)) is not None
-            ]
-            out.append((channel, episodes))
-        return out
-
-    async def get_internet_radio_stations(self) -> list[Song]:
-        """Internet-radio stations as playable Songs. The station's direct
-        `streamUrl` rides on `Song.stream_url` so mpv opens it straight,
-        bypassing the Subsonic stream endpoint (see `_stream_source`)."""
-        body = await self._get("getInternetRadioStations")
-        stations = body.get("internetRadioStations", {}).get("internetRadioStation", [])
-        songs: list[Song] = []
-        for st in stations:
-            station = RadioStation.from_api(st)
-            if not station.stream_url:
-                continue
-            songs.append(
-                Song(
-                    id=f"radio:{station.id}",
-                    title=station.name,
-                    artist="internet radio",
-                    album=station.home_url,
-                    stream_url=station.stream_url,
-                )
-            )
-        return songs
-
     # ── playback side-channel ─────────────────────────────────────────
     def stream_url(self, song_id: str) -> str:
         # maxBitRate/format only when set — 0/"" means original quality, so we
@@ -348,20 +207,6 @@ class SubsonicClient:
         """kind: song | album | artist"""
         key = {"song": "id", "album": "albumId", "artist": "artistId"}[kind]
         await self._get("star" if star else "unstar", **{key: item_id})
-
-    async def set_rating(self, song_id: str, rating: int) -> None:
-        """rating 1-5, or 0 to clear."""
-        await self._get("setRating", id=song_id, rating=max(0, min(5, rating)))
-
-
-    async def create_share(self, item_id: str) -> str:
-        """Public share link for a song/album (needs sharing enabled
-        server-side). Returns the URL."""
-        body = await self._get("createShare", id=item_id)
-        shares = body.get("shares", {}).get("share", [])
-        if not shares or not shares[0].get("url"):
-            raise SubsonicError("server did not return a share url")
-        return shares[0]["url"]
 
     # ── cover art ─────────────────────────────────────────────────────
     # 1200px: big enough that kitty/sixel terminals get a crisp image at

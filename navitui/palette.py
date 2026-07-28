@@ -24,22 +24,13 @@ _PREV = "\uf048"      # nf-fa-step_backward
 
 _SHUFFLE = "\uf074"   # nf-fa-random
 _REPEAT = "\uf01e"    # nf-fa-repeat
-_FILTER = "\uf0b0"    # nf-fa-filter
 _PLUS = "\uf067"      # nf-fa-plus
 _MINUS = "\uf068"     # nf-fa-minus
 _TRASH = "\uf1f8"     # nf-fa-trash
-_RADIO = "\uf519"     # nf-fa-broadcast_tower
 _STAR = "\uf005"      # nf-fa-star
-_LIST = "\uf03a"      # nf-fa-list
-
-_LINK = "\uf0c1"      # nf-fa-link
-_CAMERA = "\uf030"    # nf-fa-camera
 _DOWNLOAD = "\uf019"  # nf-fa-download
 _PLUG = "\uf1e6"      # nf-fa-plug
 _BELL = "\uf0f3"      # nf-fa-bell
-_ALBUM = "\uf51f"     # nf-fa-compact_disc
-_MIC = "\uf130"       # nf-fa-microphone
-_REFRESH = "\uf021"   # nf-fa-refresh
 _PALETTE = "\uf1fc"   # nf-fa-paint_brush
 _MOON = "\uf186"      # nf-fa-moon_o
 _HELP = "\uf059"      # nf-fa-question_circle
@@ -54,26 +45,16 @@ COMMANDS: list[tuple[str, str, str]] = [
 
     (f"{_SHUFFLE} shuffle", "toggle_shuffle", "toggle shuffle"),
     (f"{_REPEAT} repeat", "cycle_repeat", "cycle repeat: off -> all -> one"),
-    (f"{_FILTER} filter tracks", "filter", "narrow the tracks pane as you type"),
     (f"{_PLUS} queue track", "enqueue(False)", "add the highlighted track to the queue"),
     (f"{_PLUS} play next", "enqueue(True)", "queue the highlighted track next"),
     (f"{_MINUS} remove from queue", "queue_remove", "drop the highlighted queue track"),
     (f"{_TRASH} clear queue", "queue_clear", "empty the play queue"),
-    (f"{_RADIO} start radio", "start_radio", "seed an endless station from this track"),
-    (f"{_RADIO} toggle radio", "toggle_radio", "autoplay similar tracks when the queue drains"),
     (f"{_STAR} star / unstar", "star", "star or unstar the highlighted track"),
-    (f"{_LIST} add to playlist", "playlist_add", "add the highlighted track to a playlist"),
-
-    (f"{_LINK} copy share link", "share", "create and copy a share link"),
-    (f"{_CAMERA} export card", "export_card", "save the now-playing state as an SVG card"),
     (f"{_DOWNLOAD} download track", "download", "pin the highlighted track for offline"),
     (f"{_DOWNLOAD} download view", "download_view", "pin every track in this pane for offline"),
     (f"{_DOWNLOAD} download library", "download_all", "pin the whole loaded library for offline"),
     (f"{_PLUG} offline mode", "toggle_offline", "play only downloaded tracks"),
     (f"{_BELL} notifications", "toggle_notifications", "toggle desktop notifications"),
-    (f"{_ALBUM} go to album", "go_album", "open the track's album"),
-    (f"{_MIC} go to artist", "go_artist", "open the track's artist"),
-    (f"{_REFRESH} refresh", "refresh", "reload playlists and the current view"),
     (f"{_PALETTE} cycle theme", "cycle_kit_theme", "step to the next kit theme"),
     (f"{_PALETTE} pick theme", "change_theme", "open the theme picker with live preview"),
     (f"{_MOON} zen splash", "toggle_zen", "big now-playing splash"),
