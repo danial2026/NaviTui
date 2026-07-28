@@ -44,7 +44,6 @@ from navitui.screens import (
     InputModal,
     NaviTuiHelpModal,
     OnboardingScreen,
-    PlaylistPickerModal,
     ServerSwitcherModal,
     StatsModal,
 )
@@ -298,10 +297,6 @@ class NaviTuiApp(KitApp):
         self.view: str = "all-songs"  # sidebar view id (or "pl:<id>", or "artist:<id>")
         self._songs: list[Song] = []  # the full tracks-pane model
         self._playlists: list[Playlist] = []
-        # type-to-filter: an explicit mode over the tracks pane. `_filtering`
-        # captures keys in on_key so bare typing never fires a global bind;
-        # `_filtered` is the derived view the list renders while active, so
-        # play/enqueue/star still map to the right Song.
         # vim repeat count: digits armed by the previous keystroke, consumed by
         # the next motion (see _handle_count). Never spans more than the very
         # next key — no timer keeps it alive.
@@ -409,7 +404,7 @@ class NaviTuiApp(KitApp):
         self._render_queue()
 
         self.set_interval(1 / 8, self._heartbeat)
-        self.set_interval(180, self._maybe_auto_refresh)
+        self.set_interval(180, self._auto_refresh)
 
         # local control API — transport + state work without a server
         # connection, so start it here (not in _start) regardless of onboarding
@@ -901,7 +896,8 @@ class NaviTuiApp(KitApp):
             return
         if oid == "pl-new":
             self.push_screen(
-                InputModal("new playlist", placeholder="name"), self._playlist_created_name
+                InputModal("new playlist", placeholder="name"),
+                lambda name: self._create_empty_playlist(name) if name else None,
             )
         elif oid == "shuffle-all":
             self._shuffle_everything()
@@ -911,6 +907,30 @@ class NaviTuiApp(KitApp):
             # (set_songs then keeps that pick first and randomises the rest)
             start = random.randrange(len(self._songs)) if self.queue.shuffle else 0
             self._play_songs(self._songs, start)
+
+    @work(exclusive=True, group="lib")
+    async def _load_playlists(self) -> None:
+        try:
+            playlists = await self.client.get_playlists()
+        except Exception as e:
+            self._connection_trouble(e)
+            return
+        self.dirs.write_cache("playlists", {"playlists": [p.to_dict() for p in playlists]})
+        self._playlists = playlists
+        self._render_sidebar()
+
+    @work(group="mutate")
+    async def _create_empty_playlist(self, name: str) -> None:
+        self._mutations += 1
+        try:
+            await self.client.create_playlist(name, [])
+        except Exception as e:
+            self.notify(f"couldn't create playlist: {e}", severity="error", timeout=5)
+            return
+        finally:
+            self._mutations -= 1
+        self.notify(f"created \u201c{name}\u201d", timeout=3)
+        self._load_playlists()
 
     # ── loading songs into the tracks pane ────────────────────────────
     def _tracks_title(self, view_id: str) -> str:
@@ -1406,167 +1426,6 @@ class NaviTuiApp(KitApp):
                 return self.queue.songs[ol.highlighted]
         return None
 
-    def action_playlist_add(self) -> None:
-        # bulk when a selection exists and the tracks pane is focused, else the
-        # single highlighted track — same PickerModal flow either way
-        selected = (
-            self._selected_songs()
-            if self.focused is not None and self.focused.id == "tracks-list"
-            else []
-        )
-        songs = selected or ([s] if (s := self._highlighted_song()) else [])
-        if not songs:
-            self.notify("highlight a track first (tracks or queue panel)", timeout=3)
-            return
-        label = songs[0].title if len(songs) == 1 else f"{len(songs)} tracks"
-        picklist = [(p.id, p.name) for p in self._playlists]
-
-        def picked(choice: dict | None) -> None:
-            if not choice:
-                return
-            if choice.get("action") == "new":
-                self.push_screen(
-                    InputModal("new playlist", placeholder="name"),
-                    lambda name: self._playlist_create(name, songs) if name else None,
-                )
-            elif choice.get("action") == "add":
-                for pid in choice.get("playlist_ids", []):
-                    self._playlist_append(pid, songs)
-
-        self.push_screen(PlaylistPickerModal(picklist, f"add “{label}” to…"), picked)
-
-    @work(group="mutate")
-    async def _playlist_create(self, name: str, songs: list[Song]) -> None:
-        self._mutations += 1
-        try:
-            await self.client.create_playlist(name, [s.id for s in songs])
-        except Exception as e:
-            self.notify(f"couldn't create playlist: {e}", severity="error", timeout=5)
-            return
-        finally:
-            self._mutations -= 1
-        if not songs:
-            detail = ""
-        elif len(songs) == 1:
-            detail = f" with {songs[0].title}"
-        else:
-            detail = f" with {len(songs)} tracks"
-        self.notify(f"created “{name}”" + detail, timeout=3)
-        self._load_playlists()
-
-    @work(group="mutate")
-    async def _playlist_append(self, playlist_id: str, songs: list[Song]) -> None:
-        self._mutations += 1
-        try:
-            await self.client.add_to_playlist(playlist_id, [s.id for s in songs])
-        except Exception as e:
-            self.notify(f"couldn't add to playlist: {e}", severity="error", timeout=5)
-            return
-        finally:
-            self._mutations -= 1
-        playlist = next((p for p in self._playlists if p.id == playlist_id), None)
-        name = playlist.name if playlist else "playlist"
-        detail = songs[0].title if len(songs) == 1 else f"{len(songs)} tracks"
-        self.notify(f"added {detail} to “{name}”", timeout=3)
-        self._invalidate_playlist(playlist_id)
-        self._load_playlists()
-
-    # ── editing the open playlist (pl:<id> view) ──────────────────────
-    def _open_playlist_id(self) -> str | None:
-        """The id of the playlist the tracks pane is showing, or None."""
-        return self.view.split(":", 1)[1] if self.view.startswith("pl:") else None
-
-    def _invalidate_playlist(self, playlist_id: str) -> None:
-        """The playlist's cached songs are stale after any edit."""
-        try:
-            (self.dirs.cache_dir / f"playlist-songs-{playlist_id}.json").unlink()
-        except OSError:
-            pass
-
-    def _playlist_track_index(self) -> int | None:
-        """Row index of the highlighted track within the open playlist view.
-        None unless a pl: view is open and the tracks list holds the cursor.
-        Filter mode is disallowed — indices must map onto the server order."""
-        if self._open_playlist_id() is None or self._filtering:
-            return None
-        focused = self.focused
-        if focused is None or focused.id != "tracks-list":
-            return None
-        ol = self.query_one("#tracks-list", NavList)
-        if ol.highlighted is None or ol.highlighted >= len(self._songs):
-            return None
-        return ol.highlighted
-
-    @work(group="mutate")
-    async def _playlist_remove_at(self, playlist_id: str, index: int, title: str) -> None:
-        self._mutations += 1
-        try:
-            await self.client.remove_from_playlist(playlist_id, [index])
-        except Exception as e:
-            self.notify(f"couldn't remove track: {e}", severity="error", timeout=5)
-            self._invalidate_playlist(playlist_id)
-            if self.view == f"pl:{playlist_id}":
-                self._load_view(self.view)  # resync from the server
-            return
-        finally:
-            self._mutations -= 1
-        self.notify(f"removed “{title}”", timeout=2)
-        self._invalidate_playlist(playlist_id)
-        self._load_playlists()
-
-    @work(group="mutate")
-    async def _playlist_rename(self, playlist_id: str, name: str) -> None:
-        self._mutations += 1
-        try:
-            await self.client.rename_playlist(playlist_id, name)
-        except Exception as e:
-            self.notify(f"couldn't rename playlist: {e}", severity="error", timeout=5)
-            return
-        finally:
-            self._mutations -= 1
-        self.notify(f"renamed to “{name}”", timeout=3)
-        if self.view == f"pl:{playlist_id}":
-            self.query_one("#tracks-panel").border_title = name
-        self._load_playlists()
-
-    def action_playlist_delete(self) -> None:
-        pid = self._open_playlist_id()
-        if pid is None:
-            self.notify("open a playlist to delete it", timeout=3)
-            return
-        playlist = next((p for p in self._playlists if p.id == pid), None)
-        name = playlist.name if playlist else "this playlist"
-        options = [
-            Option(Text(f" {icons.CROSS_CIRCLE} delete “{name}”", style=palette.red), id="yes"),
-            Option(Text(f" {icons.CHECK_CIRCLE} keep it", style=palette.sub), id="no"),
-        ]
-
-        def confirmed(choice: str | None) -> None:
-            if choice == "yes":
-                self._playlist_delete(pid, name)
-
-        self.push_screen(PickerModal(f"delete “{name}”?", options), confirmed)
-
-    @work(group="mutate")
-    async def _playlist_delete(self, playlist_id: str, name: str) -> None:
-        self._mutations += 1
-        try:
-            await self.client.delete_playlist(playlist_id)
-        except Exception as e:
-            self.notify(f"couldn't delete playlist: {e}", severity="error", timeout=5)
-            return
-        finally:
-            self._mutations -= 1
-        self.notify(f"deleted “{name}”", timeout=3)
-        self._invalidate_playlist(playlist_id)
-        # fall back to the default view if we were looking at the deleted one
-        if self.view == f"pl:{playlist_id}":
-            self.view = "all-songs"
-            self.dirs.save_state({"view": self.view})
-            self._highlight_view(self.view)
-            self._load_view(self.view)
-        self._load_playlists()
-
     def action_queue_save(self) -> None:
         """Save the current play queue as a brand-new playlist."""
         if not self.queue.songs:
@@ -1646,15 +1505,7 @@ class NaviTuiApp(KitApp):
 
     # ── offline downloads ─────────────────────────────────────────────
     def action_download(self) -> None:
-        """Pin the selection (if any) or the highlighted/playing track."""
-        selected = (
-            self._selected_songs()
-            if self.focused is not None and self.focused.id == "tracks-list"
-            else []
-        )
-        if selected:
-            self._download_songs(selected, label=f"{len(selected)} tracks")
-            return
+        """Pin the highlighted/playing track."""
         song = self._target_song()
         if song is None:
             self.notify("highlight a track to download", timeout=2)
