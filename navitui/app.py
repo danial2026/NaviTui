@@ -938,6 +938,9 @@ class NaviTuiApp(KitApp):
         await asyncio.sleep(0.12)
         title = self._tracks_title(view_id)
 
+        if not view_id.startswith("pl:"):
+            self._hide_pl_header()
+
         if view_id in ("all-songs", "shuffle-all"):
             cache_key, fetch = "all-songs", self.client.get_all_songs
         elif view_id in ("newest", "recent", "frequent"):
@@ -952,7 +955,10 @@ class NaviTuiApp(KitApp):
                 return await self.client.get_starred()
         elif view_id.startswith("pl:"):
             pid = view_id.split(":", 1)[1]
+            playlist = next((p for p in self._playlists if p.id == pid), None)
             cache_key = f"playlist-songs-{pid}"
+            self._show_pl_header(playlist)
+            self._load_pl_art(pid)
 
             async def fetch(p=pid):
                 return await self.client.get_playlist_songs(p)
@@ -1701,6 +1707,19 @@ class NaviTuiApp(KitApp):
             el.remove_children()
             el.mount(Static("♪", id="pl-placeholder"))
         self.app.call_next(do)
+
+    def _show_pl_header(self, playlist: Playlist | None) -> None:
+        el = self.query_one("#pl-header")
+        el.styles.display = "block"
+        info = self.query_one("#pl-info", Static)
+        if playlist:
+            dur = anim.fmt_time(playlist.duration)
+            info.update(f"[bold]{playlist.name}[/]\n{playlist.song_count} tracks · {dur}")
+        else:
+            info.update("")
+
+    def _hide_pl_header(self) -> None:
+        self.query_one("#pl-header").styles.display = "none"
 
     def _sync_border_tint(self):
         from ricekit.palette import palette
