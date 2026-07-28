@@ -44,12 +44,9 @@ from navitui.screens import (
     NaviTuiHelpModal,
     OnboardingScreen,
     ServerSwitcherModal,
-    StatsModal,
 )
 from pathlib import Path
 
-from navitui.stats import StatsStore
-from navitui import stats as statsmod
 from navitui.widgets import ClickList, Logo, NowPlaying, PAUSE_GLYPH, PLAY_GLYPH
 
 # read once at import so the bindings table below can be built from it;
@@ -145,7 +142,6 @@ HELP_SECTIONS = [
         [
             ("t", "cycle kit themes"),
             ("T", "theme picker (live preview)"),
-            ("ctrl+w", "listening stats / wrapped"),
             ("z", "zen / now-playing splash"),
             ("ctrl+e", "equalizer"),
             ("ctrl+o", "audio device"),
@@ -193,8 +189,7 @@ class NaviTuiApp(KitApp):
         _kb("quality_cycle", "cycle_quality"),
 
                                                         _kb("queue_save", "queue_save"),
-        _kb("stats", "stats"),
-                                                                _kb("notifications", "toggle_notifications"),
+        _kb("notifications", "toggle_notifications"),
         _kb("panel_prev", "focus_panel(-1)"),
         _kb("panel_next", "focus_panel(1)"),
                 _kb("theme_cycle", "cycle_kit_theme", "theme", show=True),
@@ -289,8 +284,6 @@ class NaviTuiApp(KitApp):
         )
         self.client: SubsonicClient | None = client
         self._ao = ao
-        # local, offline listening stats — one JSONL append per confirmed play
-        self.stats = StatsStore(self.dirs.cache_dir)
         self.queue = PlayQueue()
         self.player = None
         self.view: str = "all-songs"  # sidebar view id (or "pl:<id>", or "artist:<id>")
@@ -1327,10 +1320,6 @@ class NaviTuiApp(KitApp):
             if position >= min(duration / 2, 240):
                 self._scrobbled = True
                 self._scrobble(song, True)
-                # a play is now "counted" — mirror it into the local stats log
-                # (cheap append; never blocks; matches the scrobble moment).
-                # Private listening skips the local log too, not just the network.
-                self.stats.log_play(song.id, song.title, song.artist)
         # crash-safe resume point, at most every 10s
         if position - self._last_persist >= 10 or position < self._last_persist:
             self._last_persist = position
