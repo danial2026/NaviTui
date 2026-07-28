@@ -206,7 +206,6 @@ class NowPlaying(Static):
         line = Text()
         line.append_text(anim.smooth_bar(frac, bar_width, head_pulse=pulse))
         line.append(times, style=palette.dim)
-        base = line.cell_len
         line.append_text(right)
 
         self._bar_span = (0, bar_width)

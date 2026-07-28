@@ -445,7 +445,7 @@ class NullPlayer:
     level = 0.0
     speed = 1.0
 
-    def __init__(self, *a, **kw) -> None:
+    def __init__(self, *a) -> None:
         pass
 
     def play(self, url: str, start: float = 0.0) -> None:

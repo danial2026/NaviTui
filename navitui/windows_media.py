@@ -348,7 +348,7 @@ class WindowsSMTC:
             log.debug("SMTC thumbnail push failed", exc_info=True)
 
     # ── events from Windows (WinRT thread-pool threads) ────────────────
-    def _on_button(self, sender: Any, args: Any) -> None:
+    def _on_button(self, _sender: Any, args: Any) -> None:
         """Media key / SMTC flyout button. Never let an exception escape —
         it would surface inside the WinRT callback machinery."""
         try:
@@ -371,7 +371,7 @@ class WindowsSMTC:
         except Exception:
             log.debug("SMTC button handler failed", exc_info=True)
 
-    def _on_position(self, sender: Any, args: Any) -> None:
+    def _on_position(self, _sender: Any, args: Any) -> None:
         """User dragged the SMTC seek bar — absolute seek."""
         try:
             self._controls["set_position"](

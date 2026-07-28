@@ -12,7 +12,7 @@ __version__ = "0.6.1"
 # pulls in textual_image). This forces the kitty graphics protocol on
 # Ghostty/Kitty and defuses textual_image's blocking sixel/tgp probe, which
 # can otherwise hang startup for seconds. Import for side effects only.
-from navitui import terminal_probe as terminal_probe  # noqa: E402,F401
+from navitui import terminal_probe as terminal_probe  # noqa: E402,F401  (import-for-side-effects)
 
 
 def main() -> None:

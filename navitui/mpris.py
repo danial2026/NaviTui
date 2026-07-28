@@ -22,10 +22,10 @@ except ImportError:
     class ServiceInterface:  # type: ignore[no-redef]
         def __init__(self, *a) -> None: ...
 
-    def method(*a, **kw):  # type: ignore[no-redef]
+    def method(*a):  # type: ignore[no-redef]
         return lambda f: f
 
-    def dbus_property(*a, **kw):  # type: ignore[no-redef]
+    def dbus_property(*a):  # type: ignore[no-redef]
         return lambda f: f
 
     class PropertyAccess:  # type: ignore[no-redef]
@@ -116,11 +116,11 @@ class _Player(ServiceInterface):
         self._controls["seek"](offset / 1_000_000)
 
     @method()
-    def SetPosition(self, track_id: "o", position: "x"):  # noqa: F821
+    def SetPosition(self, _track_id: "o", position: "x"):  # noqa: F821
         self._controls["set_position"](position / 1_000_000)
 
     @method()
-    def OpenUri(self, uri: "s"):  # noqa: F821
+    def OpenUri(self, _uri: "s"):  # noqa: F821
         pass
 
     # ── state ─────────────────────────────────────────────────────────
@@ -189,8 +189,6 @@ class Mpris:
         if not MPRIS_AVAILABLE:
             return False
         try:
-            from dbus_fast import Variant  # noqa: F401  (import check)
-
             self._bus = await MessageBus().connect()
             self._player = _Player(controls)
             self._bus.export(OBJECT_PATH, _Root())

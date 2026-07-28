@@ -23,7 +23,6 @@ from textual.widgets import Footer, OptionList, Static
 from textual.widgets.option_list import Option
 
 from ricekit import KitApp, icons, palette
-from ricekit.modals import PickerModal
 from ricekit.storage import AppDirs
 from ricekit.widgets import NavList, Splitter
 
@@ -31,7 +30,7 @@ from navitui import anim, artcolor, config as configmod, player as playermod
 from navitui.api import SubsonicClient, SubsonicError
 from navitui.art import CoverArt
 from navitui.integrations import DiscordPresence, ListenBrainz, Notifier
-from navitui.models import Artist, Playlist, Song
+from navitui.models import Playlist, Song
 from navitui.nowplaying import create_nowplaying
 from navitui import mutations as mutations_mod
 from navitui.mutations import MutationQueue
@@ -47,6 +46,8 @@ from navitui.screens import (
     ServerSwitcherModal,
     StatsModal,
 )
+from pathlib import Path
+
 from navitui.stats import StatsStore
 from navitui import stats as statsmod
 from navitui.widgets import ClickList, Logo, NowPlaying, PAUSE_GLYPH, PLAY_GLYPH
@@ -55,8 +56,6 @@ from navitui.widgets import ClickList, Logo, NowPlaying, PAUSE_GLYPH, PLAY_GLYPH
 # remapping a key is an edit to player.toml + restart
 CONFIG = configmod.load(AppDirs("navitui").config_file.parent)
 
-# nf-fa-bookmark — as a \uXXXX escape (raw PUA glyphs don't survive patching)
-BOOKMARK_GLYPH = "\uf02e"
 
 def _kb(action_id: str, action: str, description: str = "", show: bool = False) -> Binding:
     return Binding(CONFIG["keybinds"][action_id], action, description, show=show)
@@ -1366,7 +1365,6 @@ class NaviTuiApp(KitApp):
             self._announce()
             self.notify("sleep timer — stopped at end of track", timeout=5)
             return
-        drained_seed = self.queue.current  # the track that just finished
         song = self.queue.advance(natural=not failed)
         if song is not None:
             self._play_current()
