@@ -31,7 +31,7 @@ from navitui import anim, artcolor, card, config as configmod, player as playerm
 from navitui.api import SubsonicClient, SubsonicError
 from navitui.art import CoverArt
 from navitui.integrations import DiscordPresence, ListenBrainz, Notifier
-from navitui.models import Album, Artist, Bookmark, Genre, Playlist, PodcastChannel, Song
+from navitui.models import Artist, Bookmark, Genre, Playlist, PodcastChannel, Song
 from navitui.nowplaying import create_nowplaying
 from navitui import mutations as mutations_mod
 from navitui.mutations import MutationQueue
