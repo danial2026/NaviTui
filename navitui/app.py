@@ -27,11 +27,11 @@ from ricekit.modals import PickerModal
 from ricekit.storage import AppDirs
 from ricekit.widgets import NavList, Splitter
 
-from navitui import anim, artcolor, card, config as configmod, player as playermod
+from navitui import anim, artcolor, config as configmod, player as playermod
 from navitui.api import SubsonicClient, SubsonicError
 from navitui.art import CoverArt
 from navitui.integrations import DiscordPresence, ListenBrainz, Notifier
-from navitui.models import Artist, Bookmark, Genre, Playlist, PodcastChannel, Song
+from navitui.models import Artist, Playlist, Song
 from navitui.nowplaying import create_nowplaying
 from navitui import mutations as mutations_mod
 from navitui.mutations import MutationQueue
@@ -59,10 +59,8 @@ CONFIG = configmod.load(AppDirs("navitui").config_file.parent)
 # nf-fa-bookmark — as a \uXXXX escape (raw PUA glyphs don't survive patching)
 BOOKMARK_GLYPH = "\uf02e"
 
-
 def _kb(action_id: str, action: str, description: str = "", show: bool = False) -> Binding:
     return Binding(CONFIG["keybinds"][action_id], action, description, show=show)
-
 
 VIEWS = [
     ("all-songs", "all tracks"),
@@ -91,7 +89,6 @@ QUALITY_PRESETS = [
     ("96 kbps", 96, "opus"),
 ]
 
-
 # Keys and descriptions are kept short on purpose: NaviTuiHelpModal is a
 # fixed-width box that pads the key column to the widest key, so a long key or
 # description wraps and breaks the columns. Widest key here is "[count] j/k".
@@ -109,8 +106,6 @@ HELP_SECTIONS = [
             ("<", "sleep timer  (off→15→…→end)"),
             ("s", "toggle shuffle"),
             ("r", "cycle repeat  (off→all→one)"),
-            ("i", "start radio from track / artist"),
-            ("I", "toggle endless autoplay"),
         ],
     ),
     (
@@ -123,17 +118,6 @@ HELP_SECTIONS = [
             ("X", "clear queue"),
             ("ctrl+s", "save queue as a playlist"),
             ("", "played tracks dim — scroll up"),
-        ],
-    ),
-    (
-        "playlists",
-        [
-            ("p", "add track to a playlist"),
-            ("P", "remove track from playlist"),
-            ("shift+↑/↓", "reorder in playlist"),
-            ("ctrl+r", "rename playlist"),
-            ("ctrl+x", "delete playlist"),
-            ("", "act on the open pl: view"),
         ],
     ),
     (
@@ -152,21 +136,10 @@ HELP_SECTIONS = [
             ("j/k/g/G", "move in lists"),
             ("[count] j/k", "repeat motion (3j = down 3)"),
             ("h / l", "previous / next panel"),
-            ("\\", "filter pane (type to narrow)"),
-            ("v", "select mode (space toggles)"),
-            ("", "then a/A/p/f/d act on selection"),
-            ("f", "star / unstar"),
             ("d / D", "download track / view"),
             ("ctrl+d", "download whole library"),
             ("O", "offline mode"),
             ("Q", "cycle stream quality"),
-            ("1-5", "rate track (repeat clears)"),
-            ("e / E", "go to album / artist"),
-            ("y", "browse by genre"),
-            ("w / W", "bookmark pos / jump to it"),
-            ("S", "copy share link"),
-            ("C", "export now-playing card"),
-            ("R", "refresh from server"),
         ],
     ),
     (
@@ -179,14 +152,12 @@ HELP_SECTIONS = [
             ("ctrl+e", "equalizer"),
             ("ctrl+o", "audio device"),
             ("ctrl+g", "switch server"),
-            ("ctrl+y", "private mode"),
             ("ctrl+p", "command palette"),
             ("?", "this help"),
             ("q", "quit"),
         ],
     ),
 ]
-
 
 class NaviTuiApp(KitApp):
     TITLE = "NaviTui"
@@ -202,8 +173,7 @@ class NaviTuiApp(KitApp):
         _kb("prev_track", "prev_track"),
         _kb("shuffle", "toggle_shuffle", "shuffle", show=True),
         _kb("repeat", "cycle_repeat", "repeat", show=True),
-        _kb("filter", "filter"),
-        _kb("seek_back", "seek(-5)"),
+                _kb("seek_back", "seek(-5)"),
         _kb("seek_forward", "seek(5)"),
         _kb("seek_back_big", "seek(-30)"),
         _kb("seek_forward_big", "seek(30)"),
@@ -218,50 +188,29 @@ class NaviTuiApp(KitApp):
         _kb("queue_clear", "queue_clear"),
         _kb("queue_move_up", "queue_move(-1)"),
         _kb("queue_move_down", "queue_move(1)"),
-        _kb("star", "star"),
-        _kb("select_mode", "toggle_select_mode"),
-        _kb("start_radio", "start_radio"),
-        _kb("radio_toggle", "toggle_radio"),
-        _kb("download", "download"),
+                                        _kb("download", "download"),
         _kb("download_view", "download_view"),
         _kb("download_all", "download_all"),
         _kb("offline_toggle", "toggle_offline"),
         _kb("quality_cycle", "cycle_quality"),
 
-        _kb("playlist_add", "playlist_add"),
-        _kb("playlist_remove", "playlist_remove"),
-        _kb("playlist_move_up", "playlist_move(-1)"),
-        _kb("playlist_move_down", "playlist_move(1)"),
-        _kb("playlist_rename", "playlist_rename"),
-        _kb("playlist_delete", "playlist_delete"),
-        _kb("queue_save", "queue_save"),
+                                                        _kb("queue_save", "queue_save"),
         _kb("stats", "stats"),
-        _kb("share", "share"),
-        _kb("export_card", "export_card"),
-        _kb("go_album", "go_album"),
-        _kb("go_artist", "go_artist"),
-        _kb("genres", "pick_genre"),
-        _kb("bookmark", "bookmark"),
-        _kb("bookmarks", "pick_bookmark"),
-        _kb("notifications", "toggle_notifications"),
+                                                                _kb("notifications", "toggle_notifications"),
         _kb("panel_prev", "focus_panel(-1)"),
         _kb("panel_next", "focus_panel(1)"),
-        _kb("refresh", "refresh"),
-        _kb("theme_cycle", "cycle_kit_theme", "theme", show=True),
+                _kb("theme_cycle", "cycle_kit_theme", "theme", show=True),
         _kb("theme_pick", "change_theme"),
         _kb("zen", "toggle_zen", "zen", show=True),
         _kb("equalizer", "show_equalizer"),
         _kb("audio_device", "switch_audio_device"),
         _kb("server_switch", "switch_server"),
-        _kb("private_mode", "toggle_private_mode"),
-        # explicit so it's remappable via player.toml; Textual would otherwise
+                # explicit so it's remappable via player.toml; Textual would otherwise
         # auto-bind ctrl+p. Naming the binding `command_palette` also stops the
         # auto-bind from doubling up.
         _kb("command_palette", "command_palette", "palette"),
         _kb("help", "help", "help", show=True),
         _kb("quit", "quit", "quit", show=True),
-        # rating is fixed on the number row (press again to clear)
-        *(Binding(str(n), f"rate({n})", show=False) for n in range(1, 6)),
     ]
 
     CSS = """
@@ -349,21 +298,10 @@ class NaviTuiApp(KitApp):
         self.view: str = "all-songs"  # sidebar view id (or "pl:<id>", or "artist:<id>")
         self._songs: list[Song] = []  # the full tracks-pane model
         self._playlists: list[Playlist] = []
-        self._podcasts: list[tuple[PodcastChannel, list[Song]]] = []  # channels + episodes
-        self._stations: list[Song] = []  # internet-radio stations as playable rows
         # type-to-filter: an explicit mode over the tracks pane. `_filtering`
         # captures keys in on_key so bare typing never fires a global bind;
         # `_filtered` is the derived view the list renders while active, so
         # play/enqueue/star still map to the right Song.
-        self._filtering = False
-        self._filter_query = ""
-        self._filtered: list[Song] = []
-        # multi-select: a set of song ids the bulk actions operate on. An
-        # explicit `_select_mode` (toggled with `v`) turns `space` into
-        # toggle-current-and-advance over the tracks pane; the selection is
-        # scoped to the tracks pane and cleared whenever its rows change.
-        self._select_mode = False
-        self._selected: set[str] = set()
         # vim repeat count: digits armed by the previous keystroke, consumed by
         # the next motion (see _handle_count). Never spans more than the very
         # next key — no timer keeps it alive.
@@ -383,8 +321,6 @@ class NaviTuiApp(KitApp):
         self._zen = False
         self._offline = False  # play/browse only what's pinned; skip the network
 
-        self._radio = False  # endless radio: refill the queue when it drains
-        self._radio_filling = False  # guard against a runaway refill loop
         self._dl_total = 0
         self._dl_done = 0
         self._dl_failed = 0
@@ -434,8 +370,7 @@ class NaviTuiApp(KitApp):
         saved_view = state.get("view", "all-songs")
         if (
             saved_view in VIEW_LABELS
-            or saved_view.startswith(("pl:", "podcast:"))
-            or saved_view == "radio"
+            or saved_view.startswith("pl:")
         ):
             self.view = saved_view
         elif saved_view == "home":
@@ -443,11 +378,7 @@ class NaviTuiApp(KitApp):
         # offline mode is session-only: always start online so a stray `O`
         # toggle can't silently strand every future launch offline
         self._offline = False
-        # private listening (no scrobble / no local play-log) — session-only,
-        # same reasoning as offline: never persist it across launches
-        self.private_mode = False
-        self._radio = bool(state.get("radio", False))
-
+        # radio state was here (removed)
 
         configmod.write_template(self.dirs.config_file.parent)
         self.notifier = Notifier(bool(CONFIG["notifications"]))
@@ -653,34 +584,8 @@ class NaviTuiApp(KitApp):
         self._render_status()
         self._render_sidebar()
         self._load_playlists()
-        self._load_podcasts_radio()
         self._load_view(self.view)
         self.notify(f"switched to {name}", timeout=3)
-
-    # ── private listening ─────────────────────────────────────────────
-    def action_toggle_private_mode(self) -> None:
-        self.private_mode = not self.private_mode
-        self._render_status()
-        self.notify(
-            "private listening on — not scrobbling"
-            if self.private_mode
-            else "private listening off",
-            timeout=3,
-        )
-
-    @staticmethod
-    def _reorder_for_artist_diversity(songs: list[Song], last_artist: str) -> list[Song]:
-        """Reorder so the same artist rarely plays back-to-back (greedy: always
-        take the next song whose artist differs from the previous one)."""
-        remaining = list(songs)
-        out: list[Song] = []
-        prev = last_artist
-        while remaining:
-            pick = next((s for s in remaining if s.artist != prev), remaining[0])
-            remaining.remove(pick)
-            out.append(pick)
-            prev = pick.artist
-        return out
 
     def _onboarded(self, config: dict | None) -> None:
         if not config:
@@ -715,13 +620,11 @@ class NaviTuiApp(KitApp):
         cached = self.dirs.read_cache("playlists")
         if cached:
             self._playlists = [Playlist.from_dict(p) for p in cached.get("playlists", [])]
-        self._restore_podcasts_radio()
         self._render_sidebar()
         sidebar = self.query_one("#sidebar-list", ClickList)
         sidebar.focus()
         self._highlight_view(self.view)
         self._load_playlists()
-        self._load_podcasts_radio()
         self._flush_mutations()  # drain anything parked from a previous session
         self.run_worker(self._start_mpris(), group="mpris")
 
@@ -884,8 +787,6 @@ class NaviTuiApp(KitApp):
             return
         host = self.client.server.split("://", 1)[-1]
         text = Text()
-        if getattr(self, "private_mode", False):
-            text.append("private  ", style=f"bold {palette.mauve}")
         if self._offline:
             text.append(f"{icons.PLUG} offline  ", style=palette.yellow)
         if self.client.max_bitrate:
@@ -968,19 +869,6 @@ class NaviTuiApp(KitApp):
         new_row.append(f" {icons.PLUS}", style=palette.sub)
         new_row.append(" new playlist", style=palette.sub)
         options.append(Option(new_row, id="pl-new"))
-        if self._podcasts:
-            for channel, episodes in self._podcasts:
-                row = Text(no_wrap=True, overflow="ellipsis")
-                row.append(" \uf2ce", style=palette.sub)  # nf-fa-podcast
-                row.append(f" {channel.title}", style=palette.text)
-                row.append(f" {len(episodes)}", style=palette.vfaint)
-                options.append(Option(row, id=f"podcast:{channel.id}"))
-        if self._stations:
-            row = Text(no_wrap=True, overflow="ellipsis")
-            row.append(" \uf519", style=palette.sub)  # nf-fa-broadcast_tower
-            row.append(" stations", style=palette.text)
-            row.append(f" {len(self._stations)}", style=palette.vfaint)
-            options.append(Option(row, id="radio"))
         had_focus = ol.has_focus
         ol.clear_options()
         ol.add_options(options)
@@ -1030,181 +918,14 @@ class NaviTuiApp(KitApp):
             pid = view_id.split(":", 1)[1]
             playlist = next((p for p in self._playlists if p.id == pid), None)
             return playlist.name if playlist else "playlist"
-        if view_id.startswith("podcast:"):
-            cid = view_id.split(":", 1)[1]
-            channel = next((c for c, _ in self._podcasts if c.id == cid), None)
-            return f"podcast · {channel.title}" if channel else "podcast"
-        if view_id == "radio":
-            return "internet radio"
         return VIEW_LABELS.get(view_id, "")
-
-    def _view_rows(self, view_id: str) -> list[Song]:
-        """The playable rows for a podcast channel / the radio view, straight
-        from the in-memory state loaded by `_load_podcasts_radio`."""
-        if view_id == "radio":
-            return list(self._stations)
-        cid = view_id.split(":", 1)[1]
-        return next((list(eps) for c, eps in self._podcasts if c.id == cid), [])
-
-    def _show_songs(self, songs: list[Song], title: str) -> None:
-        self._songs = songs
-        if self._filtering:
-            self._exit_filter()
-        self._clear_selection()
-        panel = self.query_one("#tracks-panel")
-        header = self.query_one("#pl-header")
-        if self.view.startswith("pl:"):
-            panel.border_title = ""
-            pid = self.view.split(":", 1)[1]
-            pl = next((p for p in self._playlists if p.id == pid), None)
-            if pl:
-                t = Text()
-                t.append(f" {pl.name}", style=f"bold {palette.text}")
-                t.append(f"  {pl.song_count} songs", style=palette.dim)
-                if pl.duration:
-                    t.append(f" · {anim.fmt_time(pl.duration)}", style=palette.dim)
-                if pl.owner:
-                    t.append(f" · {pl.owner}", style=palette.vfaint)
-                self.query_one("#pl-info", Static).update(t)
-                self._load_pl_art(pl.id)
-                header.display = True
-            else:
-                header.display = False
-        else:
-            panel.border_title = title
-            header.display = False
-        self._fill("#tracks-list", [self._song_row(s, i) for i, s in enumerate(songs)], "#tracks-panel")
-
-    @work(exclusive=True, group="songs")
-    async def _load_view(self, view_id: str) -> None:
-        await asyncio.sleep(0.12)  # superseded while the cursor is moving
-        title = self._tracks_title(view_id)
-
-        if view_id in ("all-songs", "shuffle-all"):
-            cache_key, fetch = "all-songs", self.client.get_all_songs
-        elif view_id in ("newest", "recent", "frequent"):
-            cache_key = f"songview-{view_id}"
-
-            async def fetch(v=view_id):
-                return await self.client.get_songs_by_albums(v)
-        elif view_id == "starred":
-            cache_key = "starred-songs"
-
-            async def fetch():
-                return await self.client.get_starred()
-        elif view_id.startswith("pl:"):
-            pid = view_id.split(":", 1)[1]
-            cache_key = f"playlist-songs-{pid}"
-
-            async def fetch(p=pid):
-                return await self.client.get_playlist_songs(p)
-        elif view_id.startswith("podcast:") or view_id == "radio":
-            # episodes / stations already live in memory (fetched + cached by
-            # `_load_podcasts_radio`); just drop the rows into the pane
-            self._show_songs(self._view_rows(view_id), title)
-            return
-        else:
-            return
-
-        cached = self.dirs.read_cache(cache_key)
-        if cached:
-            self._show_songs([Song.from_dict(s) for s in cached.get("songs", [])], title)
-        try:
-            songs = await fetch()
-        except Exception as e:
-            self._connection_trouble(e)
-            return
-        self.dirs.write_cache(cache_key, {"songs": [s.to_dict() for s in songs]})
-        if self.view == view_id:
-            self._show_songs(songs, title)
-
-    @work(exclusive=True, group="songs")
-    async def _load_artist_songs(self, artist: Artist) -> None:
-        """Every song by an artist, flattened."""
-        title = f"artist · {artist.name}"
-        self.view = f"artist:{artist.id}"
-        self._highlight_view(None)
-        cache_key = f"artist-songs-{artist.id}"
-        cached = self.dirs.read_cache(cache_key)
-        if cached:
-            self._show_songs([Song.from_dict(s) for s in cached.get("songs", [])], title)
-        try:
-            albums = await self.client.get_artist_albums(artist.id)
-            results = await asyncio.gather(
-                *(self.client.get_album_songs(a.id) for a in albums),
-                return_exceptions=True,
-            )
-        except Exception as e:
-            self._connection_trouble(e)
-            return
-        songs: list[Song] = []
-        for r in results:
-            if isinstance(r, list):
-                songs.extend(r)
-        self.dirs.write_cache(cache_key, {"songs": [s.to_dict() for s in songs]})
-        self._show_songs(songs, title)
-        self.query_one("#tracks-list", ClickList).focus()
-
-    @work(exclusive=True, group="lib")
-    async def _load_playlists(self) -> None:
-        try:
-            playlists = await self.client.get_playlists()
-        except Exception as e:
-            self._connection_trouble(e)
-            return
-        self.dirs.write_cache("playlists", {"playlists": [p.to_dict() for p in playlists]})
-        self._playlists = playlists
-        self._render_sidebar()
-
-    def _restore_podcasts_radio(self) -> None:
-        """Rehydrate podcasts + stations from cache so their sidebar sections
-        render instantly on launch (before the network worker runs)."""
-        cached = self.dirs.read_cache("podcasts")
-        if cached:
-            self._podcasts = [
-                (PodcastChannel.from_dict(c), [Song.from_dict(s) for s in eps])
-                for c, eps in cached.get("channels", [])
-            ]
-        cached = self.dirs.read_cache("radio")
-        if cached:
-            self._stations = [Song.from_dict(s) for s in cached.get("stations", [])]
-
-    @work(exclusive=True, group="lib-podcasts")
-    async def _load_podcasts_radio(self) -> None:
-        """Refresh podcast channels+episodes and radio stations off the network.
-        Each half degrades on its own: a server without podcasts (or radio)
-        just leaves that section absent, never an error."""
-        if self.client is None:
-            return
-        try:
-            self._podcasts = await self.client.get_podcasts()
-        except Exception:
-            pass  # no podcasts / older server — keep whatever cache we had
-        else:
-            self.dirs.write_cache("podcasts", {
-                "channels": [
-                    [c.to_dict(), [s.to_dict() for s in eps]] for c, eps in self._podcasts
-                ]
-            })
-        try:
-            self._stations = await self.client.get_internet_radio_stations()
-        except Exception:
-            pass
-        else:
-            self.dirs.write_cache("radio", {"stations": [s.to_dict() for s in self._stations]})
-        self._render_sidebar()
-        # if the pane is showing a podcast/radio view, refresh its rows in place
-        if self.view.startswith("podcast:") or self.view == "radio":
-            self._show_songs(self._view_rows(self.view), self._tracks_title(self.view))
 
     # ── row rendering ─────────────────────────────────────────────────
     def _song_row(self, s: Song, index: int) -> Option:
         current = self.queue.current
         is_current = current is not None and s.id == current.id
         row = Text(no_wrap=True, overflow="ellipsis")
-        if s.id in self._selected:
-            row.append(f" {icons.CHECK_CIRCLE}", style=palette.text)
-        elif is_current:
+        if is_current:
             row.append(f" {PLAY_GLYPH}", style=palette.text)
         else:
             row.append("  ", style=palette.vfaint)
@@ -1213,8 +934,6 @@ class NaviTuiApp(KitApp):
             row.append(f" {icons.CHECK}", style=palette.text)
         if s.starred:
             row.append(f" {icons.STAR}", style=palette.text)
-        if s.user_rating:
-            row.append(f" {chr(0x2460 + s.user_rating - 1)}", style=palette.text)
         row.append(f"  {s.artist}", style=palette.dim)
         row.append(f" · {anim.fmt_time(s.duration)}", style=palette.vfaint)
         return Option(row, id=f"trk-{index}")
@@ -1236,10 +955,7 @@ class NaviTuiApp(KitApp):
 
     # ── tracks pane ───────────────────────────────────────────────────
     def _tracks_view(self) -> list[Song]:
-        """The list the tracks pane is currently showing: the filtered subset
-        while filter mode is active, otherwise the full `_songs`. Row indices
-        and highlights map onto this, so play/enqueue/star stay correct."""
-        return self._filtered if self._filtering else self._songs
+        return self._songs
 
     @on(OptionList.OptionHighlighted, "#tracks-list")
     def _track_highlighted(self, event: OptionList.OptionHighlighted) -> None:
@@ -1271,218 +987,6 @@ class NaviTuiApp(KitApp):
     # binding, so `s`/`f`/`a`/… type instead of shuffling/starring/queueing.
     # j/k/g/G/up/down/enter fall through untouched, so list navigation and
     # "play the highlighted match" keep working; esc restores the full list.
-    def action_filter(self) -> None:
-        if not self._songs:
-            self.notify("nothing here to filter", timeout=2)
-            return
-        self.query_one("#tracks-list", ClickList).focus()
-        self._filtering = True
-        self._filter_query = ""
-        self._filtered = list(self._songs)
-        self._render_filter_bar()
-
-    # keys the count buffer treats as a list motion, mapped to the NavList
-    # action that performs one step of it. j/k/down/up move by one row; g/G
-    # jump to the ends (a count there is meaningless, so it just runs once).
-    _COUNT_MOTIONS = {
-        "j": "cursor_down", "down": "cursor_down",
-        "k": "cursor_up", "up": "cursor_up",
-        "g": "first", "G": "last",
-    }
-    _COUNT_LISTS = {"tracks-list", "queue-list", "sidebar-list"}
-
-    def on_key(self, event) -> None:
-        # select mode: intercept `space` (globally play/pause) into
-        # toggle-current-and-advance, but ONLY while our mode is active and the
-        # tracks pane is focused — so we never hijack the global bind elsewhere.
-        # Written before the filter branch and guarded by its own flag so it
-        # composes with type-to-filter and any other on_key consumer.
-        if self._select_mode:
-            focused = self.focused
-            in_tracks = focused is not None and focused.id == "tracks-list"
-            if event.key == "escape":
-                self._exit_select_mode()
-                event.prevent_default()
-                event.stop()
-                return
-            if in_tracks and event.key == "space":
-                self._toggle_current_selection()
-                event.prevent_default()
-                event.stop()
-                return
-            # j/k/g/G/arrows fall through so navigation still works
-        # vim repeat counts: a digit pressed on a focused list arms a count for
-        # the *next* keystroke. Digits 1-5 still rate the track immediately (the
-        # binding fires as normal — we don't consume the event); we only stash
-        # the pending count so an immediately-following motion repeats. This is
-        # the clean no-timer resolution of the digit/rating tension: a bare
-        # digit always rates, and `3j` moves three rows. Runs before the filter
-        # branch and before the binding system, but only when NOT filtering and
-        # a list is focused, so modals/transport are untouched.
-        if not self._filtering:
-            self._handle_count(event)
-            return
-        key = event.key
-        if key == "escape":
-            self._exit_filter()
-            event.prevent_default()
-            event.stop()
-            return
-        # navigation + selection belong to the (focused) tracks list; enter
-        # plays the highlighted match. Let these reach the binding system.
-        if key in ("up", "down", "j", "k", "g", "G", "home", "end",
-                   "pageup", "pagedown", "enter", "tab", "shift+tab"):
-            return
-        if key == "backspace":
-            self._filter_query = self._filter_query[:-1]
-            self._apply_filter()
-            event.prevent_default()
-            event.stop()
-            return
-        if event.is_printable and event.character:
-            self._filter_query += event.character
-            self._apply_filter()
-            event.prevent_default()
-            event.stop()
-
-    def _handle_count(self, event) -> None:
-        """Apply / arm a vim repeat count for the focused list.
-
-        A count armed by the previous keystroke lives for exactly one key:
-        if this key is a motion, run it `count` times and consume the extra
-        steps; otherwise the count is dropped. Digits 1-9 (and 0 only when a
-        count is already building) re-arm the count and fall through so the
-        `rate` binding still fires — so a bare digit rates and `3j` moves
-        three rows. Only tracks/queue/sidebar; modals never reach
-        here because their own focus owns the keys."""
-        focused = self.focused
-        if focused is None or focused.id not in self._COUNT_LISTS:
-            self._count = ""
-            return
-        key = event.key
-        pending, self._count = self._count, ""  # consume; re-arm below if digit
-
-        action = self._COUNT_MOTIONS.get(key)
-        if action is not None and pending:
-            # let the first step run via the normal binding; drive the rest
-            # here, then swallow nothing — the binding still performs step one
-            try:
-                repeat = max(1, int(pending)) - 1
-            except ValueError:
-                repeat = 0
-            if action in ("first", "last"):
-                repeat = 0  # jumping to an end more than once is a no-op
-            for _ in range(min(repeat, 500)):  # cap: never loop unboundedly
-                getattr(focused, f"action_{action}")()
-            return
-
-        if len(key) == 1 and key.isdigit():
-            # arm the count for the next keystroke. Non-zero starts a count;
-            # 0 only extends one. Fall through (no prevent_default) so digits
-            # 1-5 still hit the rate binding.
-            if key != "0" or pending:
-                self._count = pending + key
-
-    def _matches(self, song: Song, needle: str) -> bool:
-        """Case-insensitive substring over title + artist, with a light
-        subsequence fallback so 'dyln' still finds 'Bob Dylan'."""
-        hay = f"{song.title} {song.artist}".lower()
-        if needle in hay:
-            return True
-        it = iter(hay)
-        return all(ch in it for ch in needle)
-
-    def _apply_filter(self) -> None:
-        needle = self._filter_query.lower().strip()
-        self._filtered = (
-            [s for s in self._songs if self._matches(s, needle)] if needle else list(self._songs)
-        )
-        self._fill("#tracks-list", [self._song_row(s, i) for i, s in enumerate(self._filtered)])
-        self._render_filter_bar()
-
-    def _render_filter_bar(self) -> None:
-        panel = self.query_one("#tracks-panel")
-        count = len(self._filtered)
-        query = self._filter_query or " "
-        panel.border_subtitle = f"{icons.FILTER} {query}  {count}/{len(self._songs)}"
-
-    def _exit_filter(self) -> None:
-        if not self._filtering:
-            return
-        self._filtering = False
-        self._filter_query = ""
-        self._filtered = []
-        # restore the full list and let the heartbeat reset the subtitle
-        panel = self.query_one("#tracks-panel")
-        panel.border_subtitle = str(len(self._songs)) if self._songs else None
-        self._fill("#tracks-list", [self._song_row(s, i) for i, s in enumerate(self._songs)])
-
-    # ── multi-select (bulk actions over a set of song ids) ─────────────
-    # `v` toggles select mode; in it, `space` toggles the highlighted row and
-    # moves down (j/k still navigate). The selection is a set of ids, so it
-    # survives re-renders (marker, star, download) and maps onto whichever
-    # view — filtered or full — the tracks pane is showing. When the underlying
-    # list changes (new view / refresh) the set is cleared via `_clear_selection`.
-    def action_toggle_select_mode(self) -> None:
-        if self._select_mode:
-            self._exit_select_mode()
-            return
-        if not self._songs:
-            self.notify("nothing here to select", timeout=2)
-            return
-        self.query_one("#tracks-list", ClickList).focus()
-        self._select_mode = True
-        self.notify("select mode — space toggles rows, esc exits", timeout=3)
-        self._render_select_subtitle()
-
-    def _exit_select_mode(self) -> None:
-        if not self._select_mode:
-            return
-        self._select_mode = False
-        self._selected.clear()
-        self._refresh_song_markers()
-        # let the heartbeat reset the subtitle (unless filter owns it)
-        if not self._filtering:
-            panel = self.query_one("#tracks-panel")
-            panel.border_subtitle = str(len(self._songs)) if self._songs else None
-        else:
-            self._render_filter_bar()
-
-    def _clear_selection(self) -> None:
-        """Drop the selection when the rows change under it (view/refresh)."""
-        self._select_mode = False
-        self._selected.clear()
-
-    def _toggle_current_selection(self) -> None:
-        ol = self.query_one("#tracks-list", NavList)
-        view = self._tracks_view()
-        if ol.highlighted is None or ol.highlighted >= len(view):
-            return
-        song = view[ol.highlighted]
-        if song.id in self._selected:
-            self._selected.discard(song.id)
-        else:
-            self._selected.add(song.id)
-        # re-render just this row's marker, then step down for fast tagging
-        self._refresh_song_markers()
-        if ol.highlighted < len(view) - 1:
-            ol.highlighted += 1
-        self._render_select_subtitle()
-
-    def _render_select_subtitle(self) -> None:
-        # don't fight the filter bar for the subtitle while filtering
-        if self._filtering:
-            self._render_filter_bar()
-            return
-        panel = self.query_one("#tracks-panel")
-        n = len(self._selected)
-        panel.border_subtitle = f"{icons.CHECK_CIRCLE} {n} selected"
-
-    def _selected_songs(self) -> list[Song]:
-        """The selected songs, in the order they appear in the current view."""
-        if not self._selected:
-            return []
-        return [s for s in self._tracks_view() if s.id in self._selected]
 
     # ── playback ──────────────────────────────────────────────────────
     def _shuffle_everything(self) -> None:
@@ -1503,10 +1007,6 @@ class NaviTuiApp(KitApp):
         """Where to play `song` from: a pinned local file if we have one,
         else the server stream URL. In offline mode a missing pin means the
         track is unplayable (None)."""
-        # internet-radio stations carry a direct URL mpv opens as-is; they are
-        # live streams, so never pinned and never available offline
-        if song.stream_url:
-            return None if self._offline else song.stream_url
         local = self.client.cached_stream(song.id) if self.client else None
         if local is not None:
             return str(local)
@@ -1729,79 +1229,6 @@ class NaviTuiApp(KitApp):
         self.dirs.save_state({"repeat": mode.value})
         self.notify(f"repeat {mode.value}", timeout=1.5)
 
-    # ── endless radio ─────────────────────────────────────────────────
-    def action_toggle_radio(self) -> None:
-        """Toggle autoplay-when-empty: keep pulling similar tracks forever."""
-        self._radio = not self._radio
-        self.dirs.save_state({"radio": self._radio})
-        self.notify(
-            "radio on — the queue refills itself" if self._radio else "radio off",
-            timeout=2,
-        )
-
-    def action_start_radio(self) -> None:
-        """Seed an endless station from the highlighted (or playing) track."""
-        song = self._target_song()
-        if song is None:
-            self.notify("highlight a track to start radio", timeout=2)
-            return
-        if self.client is None:
-            return
-        self._radio = True
-        self.dirs.save_state({"radio": True})
-        self.query_one("#now", NowPlaying).repeat = self.queue.repeat
-        self._play_songs([song], 0)  # start clean from the seed
-        self.notify(f"radio: {song.title}", timeout=3)
-        self._radio_refill(song, autoplay=False)  # prime the queue ahead
-
-    @work(exclusive=True, group="radio")
-    async def _radio_refill(self, seed: Song, autoplay: bool) -> None:
-        """Fetch a bounded batch of songs like `seed` and append them. Runs
-        off the UI thread. Falls back similar → top-songs → random, and stops
-        quietly if all of those come up empty. `_radio_filling` guards against
-        a runaway loop; ids already in the queue are dropped so we neither
-        spam duplicates nor immediately re-queue what just played."""
-        if self._radio_filling or self.client is None:
-            return
-        self._radio_filling = True
-        try:
-            batch: list[Song] = []
-            try:
-                batch = await self.client.get_similar_songs(seed.id, count=25)
-                if not batch and seed.artist_id:
-                    batch = await self.client.get_similar_songs(seed.artist_id, count=25)
-                if not batch and seed.artist:
-                    batch = await self.client.get_top_songs(seed.artist, count=25)
-                if not batch:
-                    batch = await self.client.get_random_songs(size=25)
-            except Exception:
-                batch = []
-            have = {s.id for s in self.queue.songs}
-            fresh = [s for s in batch if s.id not in have][:20]
-            # avoid long same-artist streaks in the endless station
-            last_artist = self.queue.songs[-1].artist if self.queue.songs else ""
-            fresh = self._reorder_for_artist_diversity(fresh, last_artist)
-            if not fresh:
-                if autoplay:  # nothing to add and the queue is empty — stop calmly
-                    self.player.stop()
-                    now = self.query_one("#now", NowPlaying)
-                    now.set_playing(False)
-                    now.set_progress(0.0, 0.0)
-                    self._render_queue()
-                    self._announce()
-                    self.notify("radio: no more tracks to play", timeout=3)
-                return
-            self.queue.add(fresh)
-            if autoplay:
-                song = self.queue.advance(natural=False)
-                if song is not None:
-                    self._play_current()
-            else:
-                self._render_queue()
-                self._persist_queue()
-        finally:
-            self._radio_filling = False
-
     # ── mpv thread callbacks ──────────────────────────────────────────
     # These arrive on mpv's event thread and must NEVER block: a blocking
     # call_from_thread here deadlocks against player.terminate() on quit
@@ -1835,8 +1262,7 @@ class NaviTuiApp(KitApp):
                 # a play is now "counted" — mirror it into the local stats log
                 # (cheap append; never blocks; matches the scrobble moment).
                 # Private listening skips the local log too, not just the network.
-                if not getattr(self, "private_mode", False):
-                    self.stats.log_play(song.id, song.title, song.artist)
+                self.stats.log_play(song.id, song.title, song.artist)
         # crash-safe resume point, at most every 10s
         if position - self._last_persist >= 10 or position < self._last_persist:
             self._last_persist = position
@@ -1875,10 +1301,6 @@ class NaviTuiApp(KitApp):
         song = self.queue.advance(natural=not failed)
         if song is not None:
             self._play_current()
-        elif self._radio and drained_seed is not None and self.client is not None:
-            # queue ran dry with radio on: keep the music going by fetching a
-            # batch of similar songs seeded from the track that just played
-            self._radio_refill(drained_seed, autoplay=True)
         else:
             self.player.stop()
             now = self.query_one("#now", NowPlaying)
@@ -1926,18 +1348,6 @@ class NaviTuiApp(KitApp):
     def action_enqueue(self, play_next: bool) -> None:
         focused = self.focused
         if focused is None or focused.id != "tracks-list":
-            return
-        selected = self._selected_songs()
-        if selected:  # bulk: queue the whole selection
-            if play_next:
-                self.queue.add_next(selected)
-            else:
-                self.queue.add(selected)
-            self._render_queue()
-            self._persist_queue()
-            self.notify(
-                f"queued {'next: ' if play_next else ''}{len(selected)} tracks", timeout=2
-            )
             return
         ol = self.query_one("#tracks-list", NavList)
         view = self._tracks_view()
@@ -2025,10 +1435,6 @@ class NaviTuiApp(KitApp):
 
         self.push_screen(PlaylistPickerModal(picklist, f"add “{label}” to…"), picked)
 
-    def _playlist_created_name(self, name: str | None) -> None:
-        if name:
-            self._playlist_create(name, [])
-
     @work(group="mutate")
     async def _playlist_create(self, name: str, songs: list[Song]) -> None:
         self._mutations += 1
@@ -2091,23 +1497,6 @@ class NaviTuiApp(KitApp):
             return None
         return ol.highlighted
 
-    def action_playlist_remove(self) -> None:
-        """Remove the highlighted track from the currently-open playlist."""
-        pid = self._open_playlist_id()
-        idx = self._playlist_track_index()
-        if pid is None or idx is None:
-            self.notify("open a playlist and highlight a track to remove", timeout=3)
-            return
-        song = self._songs[idx]
-        # optimistic: drop it from the model and re-render, then persist
-        del self._songs[idx]
-        title = self._tracks_title(self.view)
-        self._show_songs(list(self._songs), title)
-        ol = self.query_one("#tracks-list", NavList)
-        if self._songs:
-            ol.highlighted = min(idx, len(self._songs) - 1)
-        self._playlist_remove_at(pid, idx, song.title)
-
     @work(group="mutate")
     async def _playlist_remove_at(self, playlist_id: str, index: int, title: str) -> None:
         self._mutations += 1
@@ -2124,50 +1513,6 @@ class NaviTuiApp(KitApp):
         self.notify(f"removed “{title}”", timeout=2)
         self._invalidate_playlist(playlist_id)
         self._load_playlists()
-
-    def action_playlist_move(self, delta: int) -> None:
-        """Move the highlighted track up/down within the open playlist and
-        persist the new order to the server."""
-        pid = self._open_playlist_id()
-        idx = self._playlist_track_index()
-        if pid is None or idx is None:
-            return
-        new = idx + delta
-        if new < 0 or new >= len(self._songs):
-            return
-        # optimistic reorder in the model, then persist the full order
-        self._songs[idx], self._songs[new] = self._songs[new], self._songs[idx]
-        title = self._tracks_title(self.view)
-        self._show_songs(list(self._songs), title)
-        self.query_one("#tracks-list", NavList).highlighted = new
-        self._playlist_reorder(pid, [s.id for s in self._songs])
-
-    @work(group="mutate")
-    async def _playlist_reorder(self, playlist_id: str, song_ids: list[str]) -> None:
-        self._mutations += 1
-        try:
-            await self.client.reorder_playlist(playlist_id, song_ids)
-        except Exception as e:
-            self.notify(f"couldn't reorder playlist: {e}", severity="error", timeout=5)
-            self._invalidate_playlist(playlist_id)
-            if self.view == f"pl:{playlist_id}":
-                self._load_view(self.view)  # resync from the server
-            return
-        finally:
-            self._mutations -= 1
-        self._invalidate_playlist(playlist_id)
-
-    def action_playlist_rename(self) -> None:
-        pid = self._open_playlist_id()
-        if pid is None:
-            self.notify("open a playlist to rename it", timeout=3)
-            return
-        playlist = next((p for p in self._playlists if p.id == pid), None)
-        current = playlist.name if playlist else ""
-        self.push_screen(
-            InputModal("rename playlist", placeholder=current),
-            lambda name: self._playlist_rename(pid, name) if name else None,
-        )
 
     @work(group="mutate")
     async def _playlist_rename(self, playlist_id: str, name: str) -> None:
@@ -2246,243 +1591,11 @@ class NaviTuiApp(KitApp):
         self.notify(f"saved “{name}” · {len(song_ids)} tracks", timeout=3)
         self._load_playlists()
 
-    # ── track extras: rating, share, go-to ────────────────────────────
-    def _target_song(self) -> Song | None:
-        """The song an action applies to: the highlighted one if a list is
-        focused, else whatever is playing."""
-        return self._highlighted_song() or self.queue.current
 
-    def action_rate(self, rating: int) -> None:
-        song = self._target_song()
-        if song is None:
-            return
-        new = 0 if song.user_rating == rating else rating  # same digit clears
-        song.user_rating = new
-        self._rate(song.id, new)
-        self._refresh_song_markers()
-        self.notify(f"rating: {'—' if new == 0 else '★' * new}", timeout=1.5)
 
-    @work(group="mutate")
-    async def _rate(self, song_id: str, rating: int) -> None:
-        if self._offline:
-            self.mutations.rate(song_id, rating)
-            self._note_queued()
-            return
-        self._mutations += 1
-        try:
-            await self.client.set_rating(song_id, rating)
-        except Exception as e:
-            if self._is_network_error(e):
-                self.mutations.rate(song_id, rating)
-                self._note_queued()
-            else:
-                self.notify(f"couldn't set rating: {e}", severity="warning")
-        finally:
-            self._mutations -= 1
 
-    def action_share(self) -> None:
-        song = self._target_song()
-        if song is None:
-            return
-        self._share(song)
 
-    @work(group="mutate")
-    async def _share(self, song: Song) -> None:
-        try:
-            url = await self.client.create_share(song.id)
-        except Exception as e:
-            self.notify(f"couldn't create share: {e}", severity="warning", timeout=5)
-            return
-        self.copy_to_clipboard(url)
-        self.notify(f"share link copied · {url}", timeout=5)
 
-    def action_export_card(self) -> None:
-        """Save the now-playing state as a shareable themed SVG card."""
-        song = self.queue.current
-        if song is None or self.player is None or not self.player.active:
-            self.notify("nothing playing to export", timeout=2)
-            return
-        path = card.export_path(song, self.dirs.cache_dir)
-        try:
-            card.export_svg(song, self.player.position, self.player.duration, path)
-        except Exception as e:
-            self.notify(f"couldn't export card: {e}", severity="warning", timeout=5)
-            return
-        self.notify(f"saved card · {path}", timeout=5)
-
-    def action_go_album(self) -> None:
-        song = self._target_song()
-        if song is None or not song.album_id:
-            return
-        self._load_album_adhoc(song)
-
-    @work(exclusive=True, group="songs")
-    async def _load_album_adhoc(self, song: Song) -> None:
-        title = f"album · {song.album}"
-        self.view = f"album:{song.album_id}"
-        self._highlight_view(None)
-        cache_key = f"album-songs-{song.album_id}"
-        cached = self.dirs.read_cache(cache_key)
-        if cached:
-            self._show_songs([Song.from_dict(s) for s in cached.get("songs", [])], title)
-        try:
-            songs = await self.client.get_album_songs(song.album_id)
-        except Exception as e:
-            self._connection_trouble(e)
-            return
-        self.dirs.write_cache(cache_key, {"songs": [s.to_dict() for s in songs]})
-        self._show_songs(songs, title)
-        ol = self.query_one("#tracks-list", ClickList)
-        idx = next((i for i, s in enumerate(songs) if s.id == song.id), None)
-        if idx is not None:
-            ol.highlighted = idx
-        ol.focus()
-
-    def action_go_artist(self) -> None:
-        song = self._target_song()
-        if song is None or not song.artist_id:
-            return
-        self._load_artist_songs(Artist(id=song.artist_id, name=song.artist))
-
-    # ── genre browse ──────────────────────────────────────────────────
-    def action_pick_genre(self) -> None:
-        """Pick a genre to load its songs into the tracks pane (ad-hoc view)."""
-        if self.client is None:
-            return
-        cached = self.dirs.read_cache("genres")
-        genres = [Genre.from_dict(g) for g in cached.get("genres", [])] if cached else []
-        if genres:
-            self._show_genre_picker(genres)
-        self._fetch_genres(show=not genres)
-
-    @work(exclusive=True, group="genres")
-    async def _fetch_genres(self, show: bool) -> None:
-        try:
-            genres = await self.client.get_genres()
-        except Exception as e:
-            if show:
-                self._connection_trouble(e)
-            return
-        self.dirs.write_cache("genres", {"genres": [g.to_dict() for g in genres]})
-        if show:
-            self._show_genre_picker(genres)
-
-    def _show_genre_picker(self, genres: list[Genre]) -> None:
-        if not genres:
-            self.notify("no genres found", timeout=2)
-            return
-        options = [
-            Option(
-                Text.assemble(
-                    (f" {icons.TAG} ", palette.mauve),
-                    (g.name, palette.text),
-                    (f"  {g.song_count}♪", palette.vfaint),
-                ),
-                id=g.name,
-            )
-            for g in genres
-        ]
-        self.push_screen(PickerModal("browse by genre", options), self._genre_picked)
-
-    def _genre_picked(self, name: str | None) -> None:
-        if name:
-            self._load_genre_songs(name)
-
-    @work(exclusive=True, group="songs")
-    async def _load_genre_songs(self, genre: str) -> None:
-        """Ad-hoc view: every song tagged with `genre`. Cache-first, mirrors
-        the artist/album ad-hoc loaders."""
-        title = f"genre · {genre}"
-        self.view = f"genre:{genre}"
-        self._highlight_view(None)
-        cache_key = f"genre-{genre}"
-        cached = self.dirs.read_cache(cache_key)
-        if cached:
-            self._show_songs([Song.from_dict(s) for s in cached.get("songs", [])], title)
-        try:
-            songs = await self.client.get_songs_by_genre(genre)
-        except Exception as e:
-            self._connection_trouble(e)
-            return
-        self.dirs.write_cache(cache_key, {"songs": [s.to_dict() for s in songs]})
-        if self.view == f"genre:{genre}":
-            self._show_songs(songs, title)
-            self.query_one("#tracks-list", ClickList).focus()
-
-    # ── bookmarks (resume long tracks / audiobooks) ───────────────────
-    def action_bookmark(self) -> None:
-        """Save a resume point at the CURRENT playback position."""
-        song = self.queue.current
-        if song is None or self.player is None or not self.player.active:
-            self.notify("nothing playing to bookmark", timeout=2)
-            return
-        position_ms = int(max(0.0, self.player.position) * 1000)
-        self._create_bookmark(song, position_ms)
-
-    @work(group="mutate")
-    async def _create_bookmark(self, song: Song, position_ms: int) -> None:
-        try:
-            await self.client.create_bookmark(song.id, position_ms)
-        except Exception as e:
-            self.notify(f"couldn't bookmark: {e}", severity="warning", timeout=5)
-            return
-        try:
-            self.dirs.cache_dir.joinpath("bookmarks.json").unlink()
-        except OSError:
-            pass
-        self.notify(
-            f"bookmarked {song.title} at {anim.fmt_time(position_ms // 1000)}", timeout=3
-        )
-
-    def action_pick_bookmark(self) -> None:
-        """Pick a saved bookmark to resume: plays the song and seeks to it."""
-        if self.client is None:
-            return
-        cached = self.dirs.read_cache("bookmarks")
-        marks = [Bookmark.from_dict(b) for b in cached.get("bookmarks", [])] if cached else []
-        if marks:
-            self._show_bookmark_picker(marks)
-        self._fetch_bookmarks(show=not marks)
-
-    @work(exclusive=True, group="bookmarks")
-    async def _fetch_bookmarks(self, show: bool) -> None:
-        try:
-            marks = await self.client.get_bookmarks()
-        except Exception as e:
-            if show:
-                self._connection_trouble(e)
-            return
-        self.dirs.write_cache("bookmarks", {"bookmarks": [b.to_dict() for b in marks]})
-        if show:
-            self._show_bookmark_picker(marks)
-
-    def _show_bookmark_picker(self, marks: list[Bookmark]) -> None:
-        if not marks:
-            self.notify("no bookmarks yet — press w while playing", timeout=3)
-            return
-        options = []
-        for i, m in enumerate(marks):
-            row = Text.assemble(
-                (f" {BOOKMARK_GLYPH} ", palette.peach),
-                (m.song.title, palette.text),
-                (f"  {m.song.artist}", palette.dim),
-                (f"  @ {anim.fmt_time(m.position_ms // 1000)}", palette.vfaint),
-            )
-            options.append(Option(row, id=str(i)))
-        self._pending_bookmarks = marks
-        self.push_screen(PickerModal("resume a bookmark", options), self._bookmark_picked)
-
-    def _bookmark_picked(self, index: str | None) -> None:
-        if index is None:
-            return
-        marks = getattr(self, "_pending_bookmarks", [])
-        try:
-            mark = marks[int(index)]
-        except (ValueError, IndexError):
-            return
-        # play the bookmarked song solo, seeking straight to the saved point
-        self.queue.set_songs([mark.song], 0)
-        self._play_current(resume_at=mark.position_ms / 1000.0)
 
     def action_toggle_notifications(self) -> None:
         on_now = self.notifier.toggle()
@@ -2529,54 +1642,7 @@ class NaviTuiApp(KitApp):
         if flushed:
             self.notify(f"synced {flushed} queued change{'s' if flushed != 1 else ''}", timeout=2)
 
-    # ── starring ──────────────────────────────────────────────────────
-    def action_star(self) -> None:
-        selected = self._selected_songs()
-        if selected and self.focused is not None and self.focused.id == "tracks-list":
-            # bulk: star every selected track (idempotent — always set on, so a
-            # mixed selection ends up uniformly starred)
-            for song in selected:
-                if not song.starred:
-                    song.starred = True
-                    self._star(song.id, "song", True)
-            self._refresh_song_markers()
-            self._render_queue()
-            current = self.queue.current
-            if current is not None and current.id in self._selected:
-                current.starred = True
-                self.query_one("#now", NowPlaying).song = current
-            self.notify(f"starred {len(selected)} tracks", timeout=2)
-            return
-        song = self._highlighted_song()
-        if song is None:
-            return
-        song.starred = not song.starred  # optimistic — the cache IS the truth
-        self._star(song.id, "song", song.starred)
-        self._refresh_song_markers()
-        self._render_queue()
-        current = self.queue.current
-        if current is not None and song.id == current.id:
-            current.starred = song.starred
-            self.query_one("#now", NowPlaying).song = current
 
-    @work(group="mutate")
-    async def _star(self, item_id: str, kind: str, star: bool) -> None:
-        # offline mode: never touch the network — the cache already reflects it
-        if self._offline:
-            self.mutations.star(item_id, kind, star)
-            self._note_queued()
-            return
-        self._mutations += 1
-        try:
-            await self.client.set_star(item_id, kind, star)
-        except Exception as e:
-            if self._is_network_error(e):
-                self.mutations.star(item_id, kind, star)
-                self._note_queued()
-            else:
-                self.notify(f"couldn't {'star' if star else 'unstar'}: {e}", severity="warning")
-        finally:
-            self._mutations -= 1
 
     # ── offline downloads ─────────────────────────────────────────────
     def action_download(self) -> None:
@@ -2592,9 +1658,6 @@ class NaviTuiApp(KitApp):
         song = self._target_song()
         if song is None:
             self.notify("highlight a track to download", timeout=2)
-            return
-        if song.stream_url:  # live radio stream — nothing to pin
-            self.notify("internet radio can't be downloaded", timeout=2)
             return
         if self.client is not None and self.client.cached_stream(song.id):
             self.notify(f"already downloaded: {song.title}", timeout=2)
@@ -2626,8 +1689,7 @@ class NaviTuiApp(KitApp):
         cheaply so re-runs are near-instant."""
         if self.client is None:
             return
-        # skip live radio streams (stream_url set) — only real files pin
-        pending = [s for s in songs if not s.stream_url and not self.client.cached_stream(s.id)]
+        pending = [s for s in songs if not self.client.cached_stream(s.id)]
         if not pending:
             self.notify(f"{label}: already downloaded", timeout=2)
             return
@@ -2685,8 +1747,6 @@ class NaviTuiApp(KitApp):
     async def _scrobble(self, song: Song, submission: bool) -> None:
         # best-effort but still worth buffering so play counts catch up; stays
         # silent (background write, no user gesture to acknowledge)
-        if getattr(self, "private_mode", False):
-            return  # private listening: no scrobble, no ListenBrainz, no buffer
         if self._offline:
             self.mutations.scrobble(song.id, submission)
             # ListenBrainz needs full track metadata the offline mutation queue
@@ -2768,6 +1828,7 @@ class NaviTuiApp(KitApp):
         try:
             artcolor.set_tint(artcolor.extract_vibrant(path))
             self._sync_border_tint()
+            self._render_sidebar()
         except Exception:
             artcolor.set_tint(None)
             self.refresh_css()
@@ -2787,25 +1848,6 @@ class NaviTuiApp(KitApp):
             direction = 0 if direction > 0 else -1
         lists[(i + direction) % len(lists)].focus()
 
-    def action_refresh(self) -> None:
-        self._load_playlists()
-        self._load_podcasts_radio()  # re-pull feeds + stations (refreshes pane)
-        if not self.view.startswith(("artist:", "album:", "genre:", "podcast:")) and self.view != "radio":
-            self._load_view(self.view)  # ad-hoc views have no sidebar entry
-        self.notify("refreshing", timeout=1.5)
-
-    def _maybe_auto_refresh(self) -> None:
-        if self.client is None or self._mutations > 0:
-            return
-        if self.screen is not self.screen_stack[0]:
-            return  # modal open — don't yank state around underneath it
-        self._load_playlists()
-        self._load_podcasts_radio()
-        if not self.view.startswith(("artist:", "album:", "genre:", "podcast:")) and self.view != "radio":
-            self._load_view(self.view)
-        # if we're reachable enough to auto-refresh, try draining the queue too;
-        # the flush worker no-ops when offline or empty and re-parks on failure
-        self._flush_mutations()
 
     def action_help(self) -> None:
         self.push_screen(NaviTuiHelpModal(HELP_SECTIONS, title="NaviTui · keys"))
@@ -2911,10 +1953,8 @@ class NaviTuiApp(KitApp):
                 pass
         self.exit()
 
-
 def main() -> None:
     NaviTuiApp().run()
-
 
 if __name__ == "__main__":
     main()
