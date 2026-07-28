@@ -153,19 +153,6 @@ def test_volume():
     check("vol print", "vol 70" in out, out)
 
 
-def test_search():
-    rc, out, _, srv = run(["search", "hello", "world"], {
-        "search": {"songs": [
-            {"id": "s1", "title": "One", "artist": "A", "duration": 60},
-            {"id": "s2", "title": "Two", "artist": "B", "duration": 125},
-        ]}
-    })
-    check("search rc", rc == cli.EXIT_OK)
-    check("search hit1", "s1  One — A  [1:00]" in out, out)
-    check("search hit2", "s2  Two — B  [2:05]" in out, out)
-    check("search query", srv.requests[0]["args"] == {"query": "hello world"}, srv.requests[0])
-
-
 def test_enqueue():
     rc, out, _, srv = run(["enqueue", "abc", "--next"], {"enqueue": {"queued": True, "title": "Track"}})
     check("enqueue rc", rc == cli.EXIT_OK)
@@ -176,24 +163,6 @@ def test_enqueue():
 def test_play_bare():
     rc, *_, srv = run(["play"])
     check("play bare", rc == cli.EXIT_OK and srv.cmds() == ["play"], srv.cmds())
-
-
-def test_play_query():
-    rc, out, _, srv = run(["play", "some", "song"], {
-        "search": {"songs": [{"id": "top", "title": "Hit", "artist": "X", "duration": 100}]},
-        "enqueue": {"queued": True, "title": "Hit"},
-    })
-    check("play query rc", rc == cli.EXIT_OK)
-    check("play query chain", srv.cmds() == ["search", "enqueue", "next", "play"], srv.cmds())
-    check("play query search args", srv.requests[0]["args"] == {"query": "some song", "limit": 5}, srv.requests[0])
-    check("play query enq args", srv.requests[1]["args"] == {"song_id": "top", "next": True}, srv.requests[1])
-    check("play query print", "Hit" in out, out)
-
-
-def test_play_query_no_match():
-    rc, _, err, _ = run(["play", "nothing"], {"search": {"songs": []}})
-    check("play no-match rc", rc == cli.EXIT_ERROR)
-    check("play no-match err", "no song matched" in err, err)
 
 
 def test_no_instance():
@@ -237,8 +206,7 @@ def test_server_error():
 def main() -> int:
     for fn in (
         test_status, test_toggle, test_passthrough, test_seek, test_volume,
-        test_search, test_enqueue, test_play_bare, test_play_query,
-        test_play_query_no_match, test_no_instance, test_server_error,
+        test_enqueue, test_play_bare, test_no_instance, test_server_error,
     ):
         print(fn.__name__)
         fn()

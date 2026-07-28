@@ -28,7 +28,6 @@ from navitui.models import (
     Playlist,
     PodcastChannel,
     RadioStation,
-    SearchResults,
     Song,
 )
 
@@ -129,7 +128,7 @@ class SubsonicClient:
 
     async def get_song(self, song_id: str) -> Song | None:
         """Resolve a single track by id (getSong) — for enqueue-by-id where the
-        song isn't already on screen (search matches names, not ids)."""
+        song isn't already on screen."""
         body = await self._get("getSong", id=song_id)
         data = body.get("song")
         return Song.from_api(data) if data else None
@@ -179,29 +178,10 @@ class SubsonicClient:
         body = await self._get("getPlaylist", id=playlist_id)
         return [Song.from_api(s) for s in body.get("playlist", {}).get("entry", [])]
 
-    async def get_starred(self) -> SearchResults:
+    async def get_starred(self) -> list[Song]:
         body = await self._get("getStarred2")
         starred = body.get("starred2", {})
-        return SearchResults(
-            artists=[Artist.from_api(a) for a in starred.get("artist", [])],
-            albums=[Album.from_api(a) for a in starred.get("album", [])],
-            songs=[Song.from_api(s) for s in starred.get("song", [])],
-        )
-
-    async def search(self, query: str, limit: int = 20) -> SearchResults:
-        body = await self._get(
-            "search3",
-            query=query,
-            artistCount=limit,
-            albumCount=limit,
-            songCount=limit * 2,
-        )
-        result = body.get("searchResult3", {})
-        return SearchResults(
-            artists=[Artist.from_api(a) for a in result.get("artist", [])],
-            albums=[Album.from_api(a) for a in result.get("album", [])],
-            songs=[Song.from_api(s) for s in result.get("song", [])],
-        )
+        return [Song.from_api(s) for s in starred.get("song", [])]
 
     async def get_genres(self) -> list[Genre]:
         """All genres in the library (`getGenres`), most-populated first so the

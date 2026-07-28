@@ -55,12 +55,10 @@ Transport control (all return ``{"ok": true}`` with an empty/echoed result):
     shuffle                            toggle shuffle
     repeat                             cycle repeat  off → all → one
 
-Library (compose on the existing client/queue):
+Queue:
 
-    search     {"query": <str>, "limit": <int>?}
-                                       -> {"songs": [...], "albums": [...], "artists": [...]}
     enqueue    {"song_id": <str>, "next": <bool>?}
-                                       queue a searched song (by id) now/next
+                                       queue a song by id now/next
 
 Query / push:
 
@@ -242,7 +240,7 @@ class Remote:
     async def _dispatch(self, rid: Any, cmd: Any, args: dict) -> dict:
         """Run one command on the loop. Handlers are the app's own actions;
         we only translate args and never touch the UI ourselves. A handler
-        may return a dict, None, or an awaitable (e.g. search hits the API)."""
+        may return a dict, None, or an awaitable."""
         try:
             if cmd == "ping":
                 return {"id": rid, "ok": True, "result": {"pong": True}}

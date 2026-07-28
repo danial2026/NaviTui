@@ -7,7 +7,7 @@ the next launch.
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 
 
 @dataclass
@@ -257,12 +257,4 @@ class RadioStation:
         return cls(**d)
 
 
-@dataclass
-class SearchResults:
-    artists: list[Artist] = field(default_factory=list)
-    albums: list[Album] = field(default_factory=list)
-    songs: list[Song] = field(default_factory=list)
 
-    @property
-    def empty(self) -> bool:
-        return not (self.artists or self.albums or self.songs)

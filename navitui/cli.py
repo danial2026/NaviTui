@@ -169,13 +169,6 @@ def format_status(state: dict) -> str:
     return "  ".join(parts) + "  " + " ".join(tail)
 
 
-def _fmt_hit(song: dict) -> str:
-    dur = _fmt_time(song.get("duration", 0))
-    artist = song.get("artist") or ""
-    who = f" — {artist}" if artist else ""
-    return f"{song.get('id')}  {song.get('title', '?')}{who}  [{dur}]"
-
-
 # ── subcommands ────────────────────────────────────────────────────────────
 async def _run(args: argparse.Namespace) -> int:
     client = await Client.connect()
@@ -202,10 +195,6 @@ async def _dispatch(client: Client, args: argparse.Namespace) -> int:
         return EXIT_OK
 
     if cmd == "play":
-        # `play` with a query = search + enqueue-next + play the top song;
-        # bare `play` just resumes. Composes cleanly on remote cmds.
-        if args.query:
-            return await _play_query(client, " ".join(args.query))
         await client.request("play")
         return EXIT_OK
 
@@ -217,16 +206,6 @@ async def _dispatch(client: Client, args: argparse.Namespace) -> int:
         result = await client.request("volume", _volume_args(args.amount))
         if isinstance(result, dict) and "volume" in result:
             print(f"vol {result['volume']}")
-        return EXIT_OK
-
-    if cmd == "search":
-        res = await client.request("search", {"query": " ".join(args.query)})
-        songs = res.get("songs", []) if isinstance(res, dict) else []
-        if not songs:
-            print("no results", file=sys.stderr)
-            return EXIT_OK
-        for song in songs:
-            print(_fmt_hit(song))
         return EXIT_OK
 
     if cmd == "enqueue":
@@ -242,25 +221,6 @@ async def _dispatch(client: Client, args: argparse.Namespace) -> int:
     # argparse guarantees a valid subcommand, so this is unreachable
     print(f"unknown command: {cmd}", file=sys.stderr)  # pragma: no cover
     return EXIT_ERROR  # pragma: no cover
-
-
-async def _play_query(client: Client, query: str) -> int:
-    """Search, then enqueue-next and play the top song hit."""
-    res = await client.request("search", {"query": query, "limit": 5})
-    songs = res.get("songs", []) if isinstance(res, dict) else []
-    if not songs:
-        print(f"no song matched {query!r}", file=sys.stderr)
-        return EXIT_ERROR
-    top = songs[0]
-    enq = await client.request("enqueue", {"song_id": top["id"], "next": True})
-    if not (isinstance(enq, dict) and enq.get("queued")):
-        print("could not queue the match", file=sys.stderr)
-        return EXIT_ERROR
-    # advance onto the just-queued track and make sure we're playing
-    await client.request("next")
-    await client.request("play")
-    print(f"▸ {top.get('title', '?')} — {top.get('artist', '')}".rstrip(" — "))
-    return EXIT_OK
 
 
 def _seek_args(amount: str) -> dict:
@@ -289,8 +249,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("status", help="print the now-playing line")
     sub.add_parser("now", help="alias for status")
-    play = sub.add_parser("play", help="resume, or search+play a query")
-    play.add_argument("query", nargs="*", help="optional song query to play")
+    sub.add_parser("play", help="resume playback")
     sub.add_parser("pause", help="pause playback")
     sub.add_parser("toggle", help="toggle play/pause")
     sub.add_parser("stop", help="stop playback")
@@ -307,11 +266,8 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("shuffle", help="toggle shuffle")
     sub.add_parser("repeat", help="cycle repeat off/all/one")
 
-    search = sub.add_parser("search", help="search the library, list song hits")
-    search.add_argument("query", nargs="+", help="search terms")
-
     enq = sub.add_parser("enqueue", help="queue a song by id")
-    enq.add_argument("song_id", help="song id from a search result")
+    enq.add_argument("song_id", help="song id")
     enq.add_argument("--next", action="store_true", help="play it next, not last")
 
     return p

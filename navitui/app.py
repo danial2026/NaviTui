@@ -180,7 +180,7 @@ HELP_SECTIONS = [
             ("ctrl+o", "audio device"),
             ("ctrl+g", "switch server"),
             ("ctrl+y", "private mode"),
-            ("ctrl+p", "command palette (search)"),
+            ("ctrl+p", "command palette"),
             ("?", "this help"),
             ("q", "quit"),
         ],
@@ -782,7 +782,6 @@ class NaviTuiApp(KitApp):
             "mute": lambda a: self.action_mute(),
             "shuffle": lambda a: self.action_toggle_shuffle(),
             "repeat": lambda a: self.action_cycle_repeat(),
-            "search": self._remote_search,
             "enqueue": self._remote_enqueue,
         }
         try:
@@ -814,19 +813,8 @@ class NaviTuiApp(KitApp):
             self.queue.repeat.value,
         )
 
-    async def _remote_search(self, a: dict) -> dict:
-        if self.client is None:
-            return {"songs": [], "albums": [], "artists": []}
-        res = await self.client.search(str(a.get("query", "")), int(a.get("limit", 20)))
-        return {
-            "songs": [s.to_dict() for s in res.songs],
-            "albums": [al.to_dict() for al in res.albums],
-            "artists": [ar.to_dict() for ar in res.artists],
-        }
-
     async def _remote_enqueue(self, a: dict) -> dict:
-        """Queue a searched song by id (now or next). Looks it up via search
-        so a client only needs the id it already saw in a `search` result."""
+        """Queue a song by id (now or next)."""
         song_id = str(a.get("song_id", ""))
         if self.client is None or not song_id:
             return {"queued": False}
@@ -834,7 +822,7 @@ class NaviTuiApp(KitApp):
         if song is None:
             song = next((s for s in self.queue.songs if s.id == song_id), None)
         if song is None:  # not on screen: resolve the id directly (getSong —
-            song = await self.client.get_song(song_id)  # search matches names)
+            song = await self.client.get_song(song_id)
         if song is None:
             return {"queued": False}
         if a.get("next"):
@@ -1103,7 +1091,7 @@ class NaviTuiApp(KitApp):
             cache_key = "starred-songs"
 
             async def fetch():
-                return (await self.client.get_starred()).songs
+                return await self.client.get_starred()
         elif view_id.startswith("pl:"):
             pid = view_id.split(":", 1)[1]
             cache_key = f"playlist-songs-{pid}"
@@ -1132,7 +1120,7 @@ class NaviTuiApp(KitApp):
 
     @work(exclusive=True, group="songs")
     async def _load_artist_songs(self, artist: Artist) -> None:
-        """Ad-hoc view from search: every song by an artist, flattened."""
+        """Every song by an artist, flattened."""
         title = f"artist · {artist.name}"
         self.view = f"artist:{artist.id}"
         self._highlight_view(None)
@@ -1330,7 +1318,7 @@ class NaviTuiApp(KitApp):
         # the clean no-timer resolution of the digit/rating tension: a bare
         # digit always rates, and `3j` moves three rows. Runs before the filter
         # branch and before the binding system, but only when NOT filtering and
-        # a list is focused, so modals/search/transport are untouched.
+        # a list is focused, so modals/transport are untouched.
         if not self._filtering:
             self._handle_count(event)
             return
@@ -1365,7 +1353,7 @@ class NaviTuiApp(KitApp):
         steps; otherwise the count is dropped. Digits 1-9 (and 0 only when a
         count is already building) re-arm the count and fall through so the
         `rate` binding still fires — so a bare digit rates and `3j` moves
-        three rows. Only tracks/queue/sidebar; modals and search never reach
+        three rows. Only tracks/queue/sidebar; modals never reach
         here because their own focus owns the keys."""
         focused = self.focused
         if focused is None or focused.id not in self._COUNT_LISTS:
