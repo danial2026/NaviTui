@@ -933,6 +933,44 @@ class NaviTuiApp(KitApp):
         self._load_playlists()
 
     # ── loading songs into the tracks pane ────────────────────────────
+    @work(exclusive=True, group="songs")
+    async def _load_view(self, view_id: str) -> None:
+        await asyncio.sleep(0.12)
+        title = self._tracks_title(view_id)
+
+        if view_id in ("all-songs", "shuffle-all"):
+            cache_key, fetch = "all-songs", self.client.get_all_songs
+        elif view_id in ("newest", "recent", "frequent"):
+            cache_key = f"songview-{view_id}"
+
+            async def fetch(v=view_id):
+                return await self.client.get_songs_by_albums(v)
+        elif view_id == "starred":
+            cache_key = "starred-songs"
+
+            async def fetch():
+                return await self.client.get_starred()
+        elif view_id.startswith("pl:"):
+            pid = view_id.split(":", 1)[1]
+            cache_key = f"playlist-songs-{pid}"
+
+            async def fetch(p=pid):
+                return await self.client.get_playlist_songs(p)
+        else:
+            return
+
+        cached = self.dirs.read_cache(cache_key)
+        if cached:
+            self._show_songs([Song.from_dict(s) for s in cached.get("songs", [])], title)
+        try:
+            songs = await fetch()
+        except Exception as e:
+            self._connection_trouble(e)
+            return
+        self.dirs.write_cache(cache_key, {"songs": [s.to_dict() for s in songs]})
+        if self.view == view_id:
+            self._show_songs(songs, title)
+
     def _tracks_title(self, view_id: str) -> str:
         if view_id.startswith("pl:"):
             pid = view_id.split(":", 1)[1]
@@ -1699,6 +1737,16 @@ class NaviTuiApp(KitApp):
             direction = 0 if direction > 0 else -1
         lists[(i + direction) % len(lists)].focus()
 
+
+    def _auto_refresh(self) -> None:
+        if self.client is None or self._mutations > 0:
+            return
+        if self.screen is not self.screen_stack[0]:
+            return
+        self._load_playlists()
+        if not self.view.startswith(("artist:", "album:")):
+            self._load_view(self.view)
+        self._flush_mutations()
 
     def action_help(self) -> None:
         self.push_screen(NaviTuiHelpModal(HELP_SECTIONS, title="NaviTui · keys"))
