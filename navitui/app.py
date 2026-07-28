@@ -1762,14 +1762,6 @@ class NaviTuiApp(KitApp):
     def action_help(self) -> None:
         self.push_screen(NaviTuiHelpModal(HELP_SECTIONS, title="NaviTui · keys"))
 
-    def action_stats(self) -> None:
-        """Open the local listening-stats modal — reads the play log on open
-        (cheap) and folds it into a summary; never touches the network."""
-        import time
-
-        summary = statsmod.summarize(self.stats.load(), time.time())
-        self.push_screen(StatsModal(summary))
-
     # ── zen / now-playing splash ──────────────────────────────────────
     def action_toggle_zen(self) -> None:
         self._zen = not self._zen

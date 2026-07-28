@@ -43,7 +43,6 @@ KEYBINDS = {
 
     "queue_save":          "ctrl+s",
 
-    "stats":               "ctrl+w",
     "notifications":       "N",
     "panel_prev":          "h",
     "panel_next":          "l",
