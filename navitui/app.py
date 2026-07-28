@@ -1,8 +1,7 @@
 """NaviTui — the app.
 
 Songs-first: one sidebar of ways-to-list-tracks (views + playlists), one big
-tracks pane, cover + queue on the right. No tabs, no album browsing — albums
-and artists only exist inside search.
+tracks pane, cover + queue on the right. No tabs, no album browsing.
 
 Cache-first everywhere: every pane renders from the last-known JSON cache
 instantly, then a worker fetches fresh rows and swaps them in silently.
