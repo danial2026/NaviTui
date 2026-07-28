@@ -6,9 +6,6 @@ A fork of [Gheat1/NaviTui](https://github.com/Gheat1/NaviTui) — I added stuff 
 
 <img src="assets/shot-main.png" alt="NaviTui" width="100%">
 
-[![license](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)](LICENSE)
-[![python](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
-
 </div>
 
 ## Install
@@ -26,8 +23,6 @@ Add to your `~/.zshrc` or `~/.bashrc` for easier access:
 ```sh
 alias navi="~/codes/NaviTui/.venv/bin/navitui"
 ```
-
-First launch asks for your server URL, username, and password.
 
 ## Keybindings
 
@@ -47,5 +42,4 @@ Press `?` for the full cheatsheet.
 ## Links
 
 - [Forked from Gheat1/NaviTui](https://github.com/Gheat1/NaviTui)
-- [ricekit](https://github.com/Gheat1/ricekit) — the design system
 - GPL-3.0-or-later
